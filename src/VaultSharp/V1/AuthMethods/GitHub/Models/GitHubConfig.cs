@@ -1,11 +1,14 @@
-﻿using JetBrains.Annotations;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
 namespace VaultSharp.V1.AuthMethods.GitHub.Models;
 
-[NoReorder]
 public class GitHubConfig
 {
+    /// <summary>
+    ///     The API endpoint to use. Useful if you are running GitHub Enterprise or an API-compatible authentication server.
+    /// </summary>
+    [JsonProperty("base_url")] public string? base_url;
+
     /// <summary>
     ///     The organization users must be part of.
     /// </summary>
@@ -16,27 +19,6 @@ public class GitHubConfig
     ///     Vault will attempt to fetch and set this value if it is not provided.
     /// </summary>
     [JsonProperty("organization_id")] public int? organization_id;
-
-    /// <summary>
-    ///     The API endpoint to use. Useful if you are running GitHub Enterprise or an API-compatible authentication server.
-    /// </summary>
-    [JsonProperty("base_url")] public string? base_url;
-
-    /// <summary>
-    ///     The incremental lifetime for generated tokens. This current value of this will be referenced at renewal time.
-    /// </summary>
-    [JsonProperty("token_ttl")] public string? token_ttl;
-
-    /// <summary>
-    ///     The maximum lifetime for generated tokens. This current value of this will be referenced at renewal time.
-    /// </summary>
-    [JsonProperty("token_max_ttl")] public string? token_max_ttl;
-
-    /// <summary>
-    ///     List of policies to encode onto generated tokens. Depending on the auth method, this list may be supplemented by
-    ///     user/group/other values.
-    /// </summary>
-    [JsonProperty("token_policies")] public string[]? token_policies;
 
     /// <summary>
     ///     List of CIDR blocks; if set, specifies blocks of IP addresses which can authenticate successfully,
@@ -50,6 +32,11 @@ public class GitHubConfig
     /// </summary>
     [JsonProperty("token_explicit_max_ttl")]
     public string? token_explicit_max_ttl;
+
+    /// <summary>
+    ///     The maximum lifetime for generated tokens. This current value of this will be referenced at renewal time.
+    /// </summary>
+    [JsonProperty("token_max_ttl")] public string? token_max_ttl;
 
     /// <summary>
     ///     If set, the default policy will not be set on generated tokens;
@@ -68,6 +55,17 @@ public class GitHubConfig
     ///     The period, if any, to set on the token.
     /// </summary>
     [JsonProperty("token_period")] public string? token_period;
+
+    /// <summary>
+    ///     List of policies to encode onto generated tokens. Depending on the auth method, this list may be supplemented by
+    ///     user/group/other values.
+    /// </summary>
+    [JsonProperty("token_policies")] public string[]? token_policies;
+
+    /// <summary>
+    ///     The incremental lifetime for generated tokens. This current value of this will be referenced at renewal time.
+    /// </summary>
+    [JsonProperty("token_ttl")] public string? token_ttl;
 
 
     /// <summary>

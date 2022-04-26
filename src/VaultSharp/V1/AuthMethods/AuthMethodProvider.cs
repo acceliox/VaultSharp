@@ -26,7 +26,7 @@ namespace VaultSharp.V1.AuthMethods
         public AuthMethodProvider(Polymath polymath)
         {
             _polymath = polymath;
-
+            GitHub = new GitHubAuthMethodProvider(_polymath);
             AppRole = new AppRoleAuthMethodProvider(_polymath);
             LDAP = new LDAPAuthMethodProvider(_polymath);
             Token = new TokenAuthMethodProvider(_polymath);
@@ -42,7 +42,7 @@ namespace VaultSharp.V1.AuthMethods
 
         public ICloudFoundryAuthMethod CloudFoundry => throw new NotImplementedException();
 
-        public IGitHubAuthMethod GitHub => throw new NotImplementedException();
+        public IGitHubAuthMethod GitHub { get; }
 
         public IGitHubAuthMethod GoogleCloud => throw new NotImplementedException();
 
@@ -71,7 +71,8 @@ namespace VaultSharp.V1.AuthMethods
 
         public async Task PerformImmediateLogin()
         {
-            await _polymath.PerformImmediateLogin().ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
+            await _polymath.PerformImmediateLogin()
+                .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
         }
     }
 }

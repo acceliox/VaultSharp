@@ -10,7 +10,7 @@ namespace VaultSharp.Samples;
 public static class VaultTestServer
 {
     public static TestcontainersContainer BuildVaultServerContainer(int port = 8200, string address = "0.0.0.0",
-        string rootTokenId = "testRoot", bool addAppRole = false, string containerName = "VaultServer")
+        string rootTokenId = "testRoot", string containerName = "VaultServer")
     {
         var container = new TestcontainersBuilder<TestcontainersContainer>()
             .WithImage("vault:latest")

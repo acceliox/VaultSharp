@@ -2,8 +2,6 @@
 // See the LICENSE file in the project root for more information.Copyright (c) acceliox GmbH. All rights reserved.
 
 using System.Collections.Generic;
-using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using FluentAssertions;
 using VaultSharp.Core;
@@ -11,6 +9,7 @@ using VaultSharp.V1.AuthMethods;
 using VaultSharp.V1.AuthMethods.AppRole;
 using VaultSharp.V1.AuthMethods.AppRole.Models;
 using VaultSharp.V1.AuthMethods.GitHub;
+using VaultSharp.V1.AuthMethods.GitHub.Models;
 using VaultSharp.V1.AuthMethods.Token;
 using VaultSharp.V1.SecretsEngines;
 using VaultSharp.V1.SystemBackend;
@@ -239,40 +238,23 @@ public class VaultContainerTestsWithoutCli
             Rules =
                 $"# read only permission for test secrets:\r\npath \"{testSecretPath}/data/*\" {{\r\n  capabilities = [\"read\"]\r\n}}"
         });
-        // CLI Interactions
-        var loginResult =
-            await container.ExecCommandWithResult(new List<string> {"vault", "login", "testRoot", "-no-store=true"});
-        var createTestRole = await container.ExecCommandWithResult(new List<string>
-        {
-            "vault",
-            "write",
-            $"auth/{appRolePath}/role/{roleName}",
-            $"role_name={roleName}",
-            $"token_policies={policyName}"
-        });
-        var roleIdResult =
-            await container.ExecCommandWithResult(new List<string>
-            {
-                "vault", "read", $"auth/{appRolePath}/role/{roleName}/role-id"
-            });
-        TryGetUuid(roleIdResult.Stdout, out var roleId);
-        // create Response Wrapped Token for Secret Id ( update permission needed on "auth/{appRolePath}/role/{roleName}/secret-id" )
-        var wrappedTokenResult = await container.ExecCommandWithResult(new List<string>
-        {
-            "vault",
-            "write",
-            "-wrap-ttl=10s",
-            "-force",
-            $"auth/{appRolePath}/role/{roleName}/secret-id"
-        });
 
-        var splitResult = wrappedTokenResult.Stdout.Split();
-        var wrappingToken = splitResult
-            .Where(x => x.Length > 3)
-            .FirstOrDefault(x => x[..3] == "hvs");
+        // create test Role
+        await rootClient.V1.Auth.AppRole.WriteAppRoleRoleAsync(
+            new AppRoleRole {role_name = roleName, token_policies = new[] {policyName}},
+            appRolePath);
+
+
+        var roleId = (await rootClient.V1.Auth.AppRole.ReadRoleIdAsync(roleName, appRolePath)).Data.Role_Id;
+        var responseWrappedTokenResponse =
+            await rootClient.V1.Auth.AppRole.CreateResponseWrappedSecretId("10s", roleName, appRolePath);
+
+        var responseWrappedToken = responseWrappedTokenResponse.WrapInfo.Token;
+
+        var secretIdResultTest = await rootClient.V1.Auth.AppRole.CreateSecretId(roleName, appRolePath);
 
         // Authenticate with wrapping token
-        IAuthMethodInfo wrappedTokenAuthMethod = new TokenAuthMethodInfo(wrappingToken);
+        IAuthMethodInfo wrappedTokenAuthMethod = new TokenAuthMethodInfo(responseWrappedToken);
         var vaultClientSettingsForUnwrapping =
             new VaultClientSettings($"{vaultAdr}:{port}", wrappedTokenAuthMethod);
         IVaultClient vaultClientForUnwrapping = new VaultClient(vaultClientSettingsForUnwrapping);
@@ -285,7 +267,7 @@ public class VaultContainerTestsWithoutCli
         // try unwrap token a second time --> needs to throw exception
         try
         {
-            wrappedTokenAuthMethod = new TokenAuthMethodInfo(wrappingToken);
+            wrappedTokenAuthMethod = new TokenAuthMethodInfo(responseWrappedToken);
             vaultClientSettingsForUnwrapping =
                 new VaultClientSettings($"{vaultAdr}:{port}", wrappedTokenAuthMethod);
             vaultClientForUnwrapping = new VaultClient(vaultClientSettingsForUnwrapping);
@@ -313,13 +295,16 @@ public class VaultContainerTestsWithoutCli
     }
 
     [Fact(Skip = "Manual Token creation process")]
+    //[Fact]
     public async Task VaultServer_UseUseGitHubAuth_TokenYieldsPolicy()
     {
         const string githubPath = "testGithub";
         const string teamName = "acceliox-developers";
+        const string userName = "AEAcceliox";
+
         const string testSecretPath = "testSecrets";
         const string policyName = "testpolicy";
-        const string tempToken = "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";
+        const string tempToken = "PERSONAL TOKEN";
         const string rootTokenId = "testRoot";
         const string containerName = "VaultTestsWithoutCLI";
         const int port = 8220;
@@ -341,16 +326,18 @@ public class VaultContainerTestsWithoutCli
                 $"# read only permission for test secrets:\r\npath \"{testSecretPath}/data/*\" {{\r\n  capabilities = [\"read\"]\r\n}}"
         });
         // CLI Interactions
-        var loginResult =
-            await container.ExecCommandWithResult(new List<string> {"vault", "login", "testRoot", "-no-store=true"});
-        var configureCompany = await container.ExecCommandWithResult(new List<string>
-        {
-            "vault", "write", $"auth/{githubPath}/config", "organization=acceliox"
-        });
-        var applyDevPolicy = await container.ExecCommandWithResult(new List<string>
-        {
-            "vault", "write", $"auth/{githubPath}/map/teams/{teamName}", $"value={policyName}"
-        });
+        await rootClient.V1.Auth.GitHub.WriteGitHubConfig(
+            new GitHubConfig {organization = "acceliox", token_no_default_policy = true}, githubPath);
+
+        var readConfig = await rootClient.V1.Auth.GitHub.ReadGitHubConfig("acceliox", githubPath);
+
+        await rootClient.V1.Auth.GitHub.WriteGitHubTeamMap(new GitHubTeamMap {team_name = teamName, value = policyName},
+            githubPath);
+        var readTeamMap = await rootClient.V1.Auth.GitHub.ReadGitHubTeamMap(teamName, githubPath);
+
+        await rootClient.V1.Auth.GitHub.WriteGitHubUserMap(new GitHubUserMap {user_name = userName, value = policyName},
+            githubPath);
+        var readUserMap = await rootClient.V1.Auth.GitHub.ReadGitHubUserMap(userName, githubPath);
 
         // login with appRole Auth
         IAuthMethodInfo gitHubAuthMethodInfo = new GitHubAuthMethodInfo(githubPath, tempToken);
@@ -363,21 +350,6 @@ public class VaultContainerTestsWithoutCli
         var token = (await gitHubClient.V1.Auth.Token.LookupSelfAsync()).Data.Policies;
 
         token.Should().ContainMatch("testpolicy");
-    }
-
-
-    private static bool TryGetUuid(string input, out string? guid)
-    {
-        var match = Regex.Match(input,
-            @"[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}?");
-        if (match.Success)
-        {
-            guid = match.Value;
-            return true;
-        }
-
-        guid = null;
-        return false;
     }
 
 

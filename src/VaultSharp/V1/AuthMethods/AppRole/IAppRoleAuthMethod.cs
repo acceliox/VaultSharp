@@ -15,7 +15,7 @@ public interface IAppRoleAuthMethod
     /// <param name="roleName">Name of the Role.</param>
     /// <param name="mountPoint">Mount point of the AppRole Auth method</param>
     /// <returns></returns>
-    Task<Secret<AppRoleInfo>> ReadRoleAsync(string roleName, string mountPoint = "approle");
+    Task<Secret<AppRoleInfo>> ReadRoleAsync(string roleName, string mountPoint = AuthMethodDefaultPaths.AppRole);
 
     /// <summary>
     ///     Writes or updates a Approle Role
@@ -24,12 +24,14 @@ public interface IAppRoleAuthMethod
     /// <para>[required]</para>
     /// Role description.
     /// <returns></returns>
-    Task WriteAppRoleRoleAsync(AppRoleRole role, string mountPoint = "approle");
+    Task WriteAppRoleRoleAsync(AppRoleRole role, string mountPoint = AuthMethodDefaultPaths.AppRole);
+
+    Task WriteCustomAppRoleId(string roleName, string customRoleId, string mountPoint = AuthMethodDefaultPaths.AppRole);
 
     /// <summary>
     ///     Reads the Role_Id of the given AppRole
     /// </summary>
-    Task<Secret<RoleId>> ReadRoleIdAsync(string roleName, string mountPoint = "approle");
+    Task<Secret<RoleId>> ReadRoleIdAsync(string roleName, string mountPoint = AuthMethodDefaultPaths.AppRole);
 
     /// <summary>
     ///     Creates a SecretId for the given RoleName
@@ -38,7 +40,7 @@ public interface IAppRoleAuthMethod
     /// <para>[required]</para>
     /// Role description.
     /// <returns></returns>
-    Task<Secret<SecretId>> CreateSecretId(string roleName, string mountPoint = "approle");
+    Task<Secret<SecretId>> CreateSecretId(string roleName, string mountPoint = AuthMethodDefaultPaths.AppRole);
 
     Task<Secret<WrapInfo>> CreateResponseWrappedSecretId(string wrapTimeToLive, string roleName,
         string mountPoint = "approle");

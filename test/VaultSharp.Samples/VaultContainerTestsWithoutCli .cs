@@ -209,6 +209,33 @@ public class VaultContainerTestsWithoutCli
         token.Should().ContainMatch("testpolicy");
     }
 
+    [Fact]
+    public async Task VaultServer_CreateCustomRoleId_ReturnsCustomId()
+    {
+        const string roleName = "testRole";
+        const string appRolePath = "dev__testAppRole";
+        const string rootTokenId = "testRoot";
+        const string containerName = "VaultTestsWithoutCLI";
+        const string customRoleId = "historian";
+        const int port = 8220;
+        await using var container =
+            VaultTestServer.BuildVaultServerContainer(port, rootTokenId: rootTokenId, containerName: containerName);
+        await container.StartAsync();
+        var rootClient = await CreateVaultRootClient(port);
+        await rootClient.V1.System.MountAuthBackendAsync(new AuthMethod
+        {
+            Path = appRolePath, Type = AuthMethodType.AppRole
+        });
+
+        await rootClient.V1.Auth.AppRole.WriteAppRoleRoleAsync(
+            new AppRoleRole {role_name = roleName},
+            appRolePath);
+        await rootClient.V1.Auth.AppRole.WriteCustomAppRoleId(roleName, customRoleId, appRolePath);
+
+        var roleIdResultTest = await rootClient.V1.Auth.AppRole.ReadRoleIdAsync(roleName, appRolePath);
+        roleIdResultTest.Data.Role_Id.Should().Match(customRoleId);
+    }
+
 
     [Fact]
     public async Task VaultServer_AppRoleAuthWithResponseWrappedToken_TokenIsValid()

@@ -42,6 +42,17 @@ internal class AppRoleAuthMethodProvider : IAppRoleAuthMethod
             .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
     }
 
+    public async Task WriteCustomAppRoleId(string roleName, string customRoleId,
+        string mountPoint = AuthMethodDefaultPaths.AppRole)
+    {
+        var requestData = new {role_id = customRoleId};
+        //var requestData = new {role.role_name, role.token_policies};
+        await _polymath
+            .MakeVaultApiRequest($"v1/auth/{mountPoint}/role/{roleName}", HttpMethod.Post,
+                requestData)
+            .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
+    }
+
     public async Task<Secret<RoleId>> ReadRoleIdAsync(string roleName,
         string mountPoint = AuthMethodDefaultPaths.AppRole)
     {

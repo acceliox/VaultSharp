@@ -222,6 +222,7 @@ public class VaultContainerTestsWithoutCli
             VaultTestServer.BuildVaultServerContainer(port, rootTokenId: rootTokenId, containerName: containerName);
         await container.StartAsync();
         var rootClient = await CreateVaultRootClient(port);
+
         await rootClient.V1.System.MountAuthBackendAsync(new AuthMethod
         {
             Path = appRolePath, Type = AuthMethodType.AppRole

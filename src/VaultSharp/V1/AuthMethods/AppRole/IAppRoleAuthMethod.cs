@@ -17,6 +17,9 @@ public interface IAppRoleAuthMethod
     /// <returns></returns>
     Task<Secret<AppRoleInfo>> ReadRoleAsync(string roleName, string mountPoint = AuthMethodDefaultPaths.AppRole);
 
+    Task<Secret<ListInfo>> ReadAllAppRoles(string mountPoint = AuthMethodDefaultPaths.AppRole);
+
+
     /// <summary>
     ///     Writes or updates a Approle Role
     /// </summary>

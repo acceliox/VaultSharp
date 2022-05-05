@@ -212,6 +212,40 @@ public class VaultContainerTestsWithoutCli
     [Fact]
     public async Task VaultServer_CreateCustomRoleId_ReturnsCustomId()
     {
+        const string roleNameA = "testrolea";
+        const string roleNameB = "testroleb";
+        const string appRolePath = "dev__testAppRole";
+        const string rootTokenId = "testRoot";
+        const string containerName = "VaultTestsWithoutCLI";
+        const int port = 8220;
+        await using var container =
+            VaultTestServer.BuildVaultServerContainer(port, rootTokenId: rootTokenId, containerName: containerName);
+        await container.StartAsync();
+        var rootClient = await CreateVaultRootClient(port);
+
+        await rootClient.V1.System.MountAuthBackendAsync(new AuthMethod
+        {
+            Path = appRolePath, Type = AuthMethodType.AppRole
+        });
+
+        await rootClient.V1.Auth.AppRole.WriteAppRoleRoleAsync(
+            new AppRoleRole {role_name = roleNameA},
+            appRolePath);
+
+        await rootClient.V1.Auth.AppRole.WriteAppRoleRoleAsync(
+            new AppRoleRole {role_name = roleNameB},
+            appRolePath);
+
+        var appRolesSecret = await rootClient.V1.Auth.AppRole.ReadAllAppRoles(appRolePath);
+        var appRoles = appRolesSecret.Data;
+
+        appRoles.Keys.Should().ContainMatch(roleNameA);
+        appRoles.Keys.Should().ContainMatch(roleNameB);
+    }
+
+    [Fact]
+    public async Task VaultServer_ReadAllAppRoles_ReturnsAllRoles()
+    {
         const string roleName = "testRole";
         const string appRolePath = "dev__testAppRole";
         const string rootTokenId = "testRoot";

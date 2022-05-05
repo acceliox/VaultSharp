@@ -64,11 +64,6 @@ internal class AppRoleAuthMethodProvider : IAppRoleAuthMethod
 
     public async Task<Secret<ListInfo>> ReadAllAppRoles(string mountPoint = AuthMethodDefaultPaths.AppRole)
     {
-        //var requestData = new { roleName };
-        //return await _polymath
-        //    .MakeVaultApiRequest<Secret<RoleId>>($"v1/auth/{mountPoint}/role/{roleName}/role-id", HttpMethod.Get)
-        //    .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
-
         return await _polymath
             .MakeVaultApiRequest<Secret<ListInfo>>($"v1/auth/{mountPoint}/role" + "?list=true",
                 HttpMethod.Get).ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);

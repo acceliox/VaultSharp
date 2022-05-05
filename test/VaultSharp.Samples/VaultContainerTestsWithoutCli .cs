@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for more information.Copyright (c) acceliox GmbH. All rights reserved.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using VaultSharp.Core;
@@ -12,6 +13,7 @@ using VaultSharp.V1.AuthMethods.GitHub;
 using VaultSharp.V1.AuthMethods.GitHub.Models;
 using VaultSharp.V1.AuthMethods.Token;
 using VaultSharp.V1.SecretsEngines;
+using VaultSharp.V1.SecretsEngines.Identity.Models;
 using VaultSharp.V1.SystemBackend;
 using Xunit;
 
@@ -210,7 +212,7 @@ public class VaultContainerTestsWithoutCli
     }
 
     [Fact]
-    public async Task VaultServer_CreateCustomRoleId_ReturnsCustomId()
+    public async Task VaultServer_ReadAllAppRoles_ReturnsAllRoles()
     {
         const string roleNameA = "testrolea";
         const string roleNameB = "testroleb";
@@ -236,6 +238,8 @@ public class VaultContainerTestsWithoutCli
             new AppRoleRole {role_name = roleNameB},
             appRolePath);
 
+        //rootClient.V1.Secrets.Identity.
+
         var appRolesSecret = await rootClient.V1.Auth.AppRole.ReadAllAppRoles(appRolePath);
         var appRoles = appRolesSecret.Data;
 
@@ -244,7 +248,7 @@ public class VaultContainerTestsWithoutCli
     }
 
     [Fact]
-    public async Task VaultServer_ReadAllAppRoles_ReturnsAllRoles()
+    public async Task VaultServer_CreateCustomRoleId_ReturnsCustomId()
     {
         const string roleName = "testRole";
         const string appRolePath = "dev__testAppRole";
@@ -412,6 +416,194 @@ public class VaultContainerTestsWithoutCli
         var token = (await gitHubClient.V1.Auth.Token.LookupSelfAsync()).Data.Policies;
 
         token.Should().ContainMatch("testpolicy");
+    }
+
+    [Fact]
+    public async Task VaultServer_CreateEntityById_ReturnsEntityName()
+    {
+        const string entityName = "testEntityName";
+        const string rootTokenId = "testRoot";
+        const string containerName = "VaultTestsWithoutCLI";
+        const int port = 8220;
+        await using var container =
+            VaultTestServer.BuildVaultServerContainer(port, rootTokenId: rootTokenId, containerName: containerName);
+        await container.StartAsync();
+        var rootClient = await CreateVaultRootClient(port);
+        var response =
+            (await rootClient.V1.Secrets.Identity.CreateOrUpdateEntityById(new CreateOrUpdateEntityByIdCommand
+            {
+                Name = entityName, Disabled = false
+            })).Data;
+
+        response.Name.Should().Match(entityName);
+    }
+
+    [Fact]
+    public async Task VaultServer_CreateEntityByName_ReturnsEntityName()
+    {
+        const string entityName = "testEntityName";
+        const string rootTokenId = "testRoot";
+        const string containerName = "VaultTestsWithoutCLI";
+        const int port = 8220;
+        await using var container =
+            VaultTestServer.BuildVaultServerContainer(port, rootTokenId: rootTokenId, containerName: containerName);
+        await container.StartAsync();
+        var rootClient = await CreateVaultRootClient(port);
+        var response =
+            (await rootClient.V1.Secrets.Identity.CreateOrUpdateEntityByName(new CreateOrUpdateEntityByNameCommand
+            {
+                Name = entityName, Disabled = false
+            })).Data;
+
+        response.Name.Should().Match(entityName);
+    }
+
+    [Fact]
+    public async Task VaultServer_CreateAlias_ReturnsCanonicalId()
+    {
+        const string roleName = "testrolea";
+        const string appRolePath = "dev__testAppRole";
+        const string entityName = "testEntityName";
+        const string rootTokenId = "testRoot";
+        const string containerName = "VaultTestsWithoutCLI";
+        const int port = 8220;
+        await using var container =
+            VaultTestServer.BuildVaultServerContainer(port, rootTokenId: rootTokenId, containerName: containerName);
+        await container.StartAsync();
+        var rootClient = await CreateVaultRootClient(port);
+        var result =
+            (await rootClient.V1.Secrets.Identity.CreateOrUpdateEntityByName(
+                new CreateOrUpdateEntityByNameCommand {Name = entityName, Disabled = false})).Data;
+        await rootClient.V1.System.MountAuthBackendAsync(new AuthMethod
+        {
+            Path = appRolePath, Type = AuthMethodType.AppRole
+        });
+
+        await rootClient.V1.Auth.AppRole.WriteAppRoleRoleAsync(
+            new AppRoleRole {role_name = roleName},
+            appRolePath);
+        await rootClient.V1.Auth.AppRole.WriteCustomAppRoleId(roleName, roleName, appRolePath);
+        var appRoleResponse = (await rootClient.V1.System.GetAuthBackendsAsync()).Data;
+        appRoleResponse.TryGetValue($"{appRolePath}/", out var authMethod);
+        var accessor = authMethod.Accessor;
+        var response =
+            (await rootClient.V1.Secrets.Identity.CreateAlias(new CreateAliasCommand
+            {
+                Name = roleName, CanonicalId = result.Id, MountAccessor = accessor
+            })).Data;
+
+        response.CanonicalId.Should().Match(result.Id);
+    }
+
+    [Fact]
+    public async Task VaultServer_ReadEntityById_ReturnsEntity()
+    {
+        const string entityName = "testEntityName";
+        const string rootTokenId = "testRoot";
+        const string containerName = "VaultTestsWithoutCLI";
+        const int port = 8220;
+        await using var container =
+            VaultTestServer.BuildVaultServerContainer(port, rootTokenId: rootTokenId, containerName: containerName);
+        await container.StartAsync();
+        var rootClient = await CreateVaultRootClient(port);
+        var response =
+            (await rootClient.V1.Secrets.Identity.CreateOrUpdateEntityByName(new CreateOrUpdateEntityByNameCommand
+            {
+                Name = entityName, Disabled = false
+            })).Data;
+
+        var readResponse = (await rootClient.V1.Secrets.Identity.ReadEntityById(response.Id)).Data;
+
+        readResponse.Name.Should().Match(entityName);
+    }
+
+    [Fact]
+    public async Task VaultServer_ReadEntityAliasById_ReturnsAppRoleRole()
+    {
+        const string roleName = "testrolea";
+        const string appRolePath = "dev__testAppRole";
+        const string entityName = "testEntityName";
+        const string rootTokenId = "testRoot";
+        const string containerName = "VaultTestsWithoutCLI";
+        const int port = 8220;
+        await using var container =
+            VaultTestServer.BuildVaultServerContainer(port, rootTokenId: rootTokenId, containerName: containerName);
+        await container.StartAsync();
+        var rootClient = await CreateVaultRootClient(port);
+        var result =
+            (await rootClient.V1.Secrets.Identity.CreateOrUpdateEntityByName(
+                new CreateOrUpdateEntityByNameCommand {Name = entityName, Disabled = false})).Data;
+        await rootClient.V1.System.MountAuthBackendAsync(new AuthMethod
+        {
+            Path = appRolePath, Type = AuthMethodType.AppRole
+        });
+
+        await rootClient.V1.Auth.AppRole.WriteAppRoleRoleAsync(
+            new AppRoleRole {role_name = roleName},
+            appRolePath);
+        await rootClient.V1.Auth.AppRole.WriteCustomAppRoleId(roleName, roleName, appRolePath);
+        var appRoleResponse = (await rootClient.V1.System.GetAuthBackendsAsync()).Data;
+        appRoleResponse.TryGetValue($"{appRolePath}/", out var authMethod);
+        var accessor = authMethod.Accessor;
+        var response =
+            (await rootClient.V1.Secrets.Identity.CreateAlias(new CreateAliasCommand
+            {
+                Name = roleName, CanonicalId = result.Id, MountAccessor = accessor
+            })).Data;
+
+        var readResponse = (await rootClient.V1.Secrets.Identity.ReadEntityAliasById(response.Id)).Data;
+
+        readResponse.Name.Should().Match(roleName);
+    }
+
+    [Fact]
+    public async Task VaultServer_ReadEntityByName_ReturnsEntity()
+    {
+        const string entityName = "testEntityName";
+        const string rootTokenId = "testRoot";
+        const string containerName = "VaultTestsWithoutCLI";
+        const int port = 8220;
+        await using var container =
+            VaultTestServer.BuildVaultServerContainer(port, rootTokenId: rootTokenId, containerName: containerName);
+        await container.StartAsync();
+        var rootClient = await CreateVaultRootClient(port);
+        await rootClient.V1.Secrets.Identity.CreateOrUpdateEntityByName(new CreateOrUpdateEntityByNameCommand
+        {
+            Name = entityName, Disabled = false
+        });
+
+        var readResponse = (await rootClient.V1.Secrets.Identity.ReadEntityByName(entityName)).Data;
+
+        readResponse.Name.Should().Match(entityName);
+    }
+
+    [Fact]
+    public async Task VaultServer_ListEntitiesByName_ReturnsAllEntities()
+    {
+        const string entityNameA = "testEntityNameA";
+        const string entityNameB = "testEntityNameB";
+
+        const string rootTokenId = "testRoot";
+        const string containerName = "VaultTestsWithoutCLI";
+        const int port = 8220;
+        await using var container =
+            VaultTestServer.BuildVaultServerContainer(port, rootTokenId: rootTokenId, containerName: containerName);
+        await container.StartAsync();
+        var rootClient = await CreateVaultRootClient(port);
+        await rootClient.V1.Secrets.Identity.CreateOrUpdateEntityByName(new CreateOrUpdateEntityByNameCommand
+        {
+            Name = entityNameA, Disabled = false
+        });
+
+        await rootClient.V1.Secrets.Identity.CreateOrUpdateEntityByName(new CreateOrUpdateEntityByNameCommand
+        {
+            Name = entityNameB, Disabled = false
+        });
+
+        var readResponse = (await rootClient.V1.Secrets.Identity.ListEntitiesByName()).Data.Keys.ToList();
+
+        readResponse.Should().ContainMatch(entityNameA);
+        readResponse.Should().ContainMatch(entityNameB);
     }
 
 

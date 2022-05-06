@@ -1,4 +1,5 @@
-﻿using System.Net.Http;
+﻿using System.Collections.Generic;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using VaultSharp.Core;
@@ -118,11 +119,12 @@ internal class IdentitySecretsEngineProvider : IIdentitySecretsEngine
         string wrapTimeToLive = null)
     {
         return await _polymath
-            .MakeVaultApiRequest<Secret<ListInfo>>(
-                mountPoint ?? _polymath.VaultClientSettings.SecretsEngineMountPoints.Identity,
-                "/entity/name" + "?list=true",
-                HttpMethod.Get, wrapTimeToLive: wrapTimeToLive)
-            .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
+                   .MakeVaultApiRequest<Secret<ListInfo>>(
+                       mountPoint ?? _polymath.VaultClientSettings.SecretsEngineMountPoints.Identity,
+                       "/entity/name" + "?list=true",
+                       HttpMethod.Get, wrapTimeToLive: wrapTimeToLive)
+                   .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext) ??
+               new Secret<ListInfo> {Data = new ListInfo {Keys = new List<string>()}};
     }
 
     public async Task<Secret<ReadEntityAliasByIdResponse>> ReadEntityAliasById(string id, string mountPoint = null,
@@ -133,5 +135,45 @@ internal class IdentitySecretsEngineProvider : IIdentitySecretsEngine
                 mountPoint ?? _polymath.VaultClientSettings.SecretsEngineMountPoints.Identity,
                 $"/entity-alias/id/{id}", HttpMethod.Get, wrapTimeToLive: wrapTimeToLive)
             .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
+    }
+
+    public async Task<Secret<CreateAliasResponse>> UpdateEntityAliasById(
+        string id,
+        CreateAliasCommand alias,
+        string mountPoint = null,
+        string wrapTimeToLive = null)
+    {
+        var configWithoutNullProperties = JsonConvert
+            .DeserializeObject(JsonConvert.SerializeObject(
+                alias,
+                new JsonSerializerSettings {NullValueHandling = NullValueHandling.Ignore}
+            ))!;
+
+        return await _polymath
+            .MakeVaultApiRequest<Secret<CreateAliasResponse>>(
+                mountPoint ?? _polymath.VaultClientSettings.SecretsEngineMountPoints.Identity, $"/entity-alias/id/{id}",
+                HttpMethod.Post, configWithoutNullProperties, wrapTimeToLive: wrapTimeToLive)
+            .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
+    }
+
+    public async Task DeleteEntityAliasById(string id,
+        string mountPoint = null)
+    {
+        await _polymath.MakeVaultApiRequest(
+                mountPoint ?? _polymath.VaultClientSettings.SecretsEngineMountPoints.Identity, $"/entity-alias/id/{id}",
+                HttpMethod.Delete)
+            .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
+    }
+
+    public async Task<Secret<ListInfo>> ListEntityAliasesById(string mountPoint = null,
+        string wrapTimeToLive = null)
+    {
+        return await _polymath
+                   .MakeVaultApiRequest<Secret<ListInfo>>(
+                       mountPoint ?? _polymath.VaultClientSettings.SecretsEngineMountPoints.Identity,
+                       "/entity-alias/id" + "?list=true",
+                       HttpMethod.Get, wrapTimeToLive: wrapTimeToLive)
+                   .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext) ??
+               new Secret<ListInfo> {Data = new ListInfo {Keys = new List<string>()}};
     }
 }

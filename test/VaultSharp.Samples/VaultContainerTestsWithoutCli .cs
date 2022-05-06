@@ -557,6 +557,104 @@ public class VaultContainerTestsWithoutCli
     }
 
     [Fact]
+    public async Task VaultServer_UpdateEntityAliasById_ReturnsNewAppRoleRole()
+    {
+        const string roleNameA = "testrolea";
+        const string roleNameB = "testroleb";
+        const string appRolePath = "dev__testAppRole";
+        const string entityName = "testEntityName";
+        const string rootTokenId = "testRoot";
+        const string containerName = "VaultTestsWithoutCLI";
+        const int port = 8220;
+        await using var container =
+            VaultTestServer.BuildVaultServerContainer(port, rootTokenId: rootTokenId, containerName: containerName);
+        await container.StartAsync();
+        var rootClient = await CreateVaultRootClient(port);
+        var result =
+            (await rootClient.V1.Secrets.Identity.CreateOrUpdateEntityByName(
+                new CreateOrUpdateEntityByNameCommand {Name = entityName, Disabled = false})).Data;
+        await rootClient.V1.System.MountAuthBackendAsync(new AuthMethod
+        {
+            Path = appRolePath, Type = AuthMethodType.AppRole
+        });
+
+        await rootClient.V1.Auth.AppRole.WriteAppRoleRoleAsync(
+            new AppRoleRole {role_name = roleNameA},
+            appRolePath);
+        await rootClient.V1.Auth.AppRole.WriteCustomAppRoleId(roleNameA, roleNameA, appRolePath);
+
+        await rootClient.V1.Auth.AppRole.WriteAppRoleRoleAsync(
+            new AppRoleRole {role_name = roleNameB},
+            appRolePath);
+        await rootClient.V1.Auth.AppRole.WriteCustomAppRoleId(roleNameB, roleNameB, appRolePath);
+
+        var appRoleResponse = (await rootClient.V1.System.GetAuthBackendsAsync()).Data;
+        appRoleResponse.TryGetValue($"{appRolePath}/", out var authMethod);
+        var accessor = authMethod.Accessor;
+        var response =
+            (await rootClient.V1.Secrets.Identity.CreateAlias(new CreateAliasCommand
+            {
+                Name = roleNameA, CanonicalId = result.Id, MountAccessor = accessor
+            })).Data;
+
+        var beforeReadResponse = (await rootClient.V1.Secrets.Identity.ReadEntityAliasById(response.Id)).Data;
+
+        var updateResponse = (await rootClient.V1.Secrets.Identity.UpdateEntityAliasById(response.Id,
+            new CreateAliasCommand {Name = roleNameB, CanonicalId = result.Id, MountAccessor = accessor})).Data;
+
+        var afterReadResponse = (await rootClient.V1.Secrets.Identity.ReadEntityAliasById(updateResponse.Id)).Data;
+
+
+        beforeReadResponse.Name.Should().Match(roleNameA);
+        afterReadResponse.Name.Should().Match(roleNameB);
+    }
+
+    [Fact]
+    public async Task VaultServer_DeleteEntityAliasById_IsNotReturnedInList()
+    {
+        const string roleNameA = "testrolea";
+        const string appRolePath = "dev__testAppRole";
+        const string entityName = "testEntityName";
+        const string rootTokenId = "testRoot";
+        const string containerName = "VaultTestsWithoutCLI";
+        const int port = 8220;
+        await using var container =
+            VaultTestServer.BuildVaultServerContainer(port, rootTokenId: rootTokenId, containerName: containerName);
+        await container.StartAsync();
+        var rootClient = await CreateVaultRootClient(port);
+        var result =
+            (await rootClient.V1.Secrets.Identity.CreateOrUpdateEntityByName(
+                new CreateOrUpdateEntityByNameCommand {Name = entityName, Disabled = false})).Data;
+        await rootClient.V1.System.MountAuthBackendAsync(new AuthMethod
+        {
+            Path = appRolePath, Type = AuthMethodType.AppRole
+        });
+
+        await rootClient.V1.Auth.AppRole.WriteAppRoleRoleAsync(
+            new AppRoleRole {role_name = roleNameA},
+            appRolePath);
+        await rootClient.V1.Auth.AppRole.WriteCustomAppRoleId(roleNameA, roleNameA, appRolePath);
+
+        var appRoleResponse = (await rootClient.V1.System.GetAuthBackendsAsync()).Data;
+        appRoleResponse.TryGetValue($"{appRolePath}/", out var authMethod);
+        var accessor = authMethod.Accessor;
+        var response =
+            (await rootClient.V1.Secrets.Identity.CreateAlias(new CreateAliasCommand
+            {
+                Name = roleNameA, CanonicalId = result.Id, MountAccessor = accessor
+            })).Data;
+
+        var beforeDeleteResponse = (await rootClient.V1.Secrets.Identity.ListEntityAliasesById()).Data.Keys.ToList();
+
+        await rootClient.V1.Secrets.Identity.DeleteEntityAliasById(response.Id);
+
+        var afterDeleteResponse = (await rootClient.V1.Secrets.Identity.ListEntityAliasesById()).Data.Keys;
+
+        beforeDeleteResponse.Should().ContainEquivalentOf(response.Id);
+        afterDeleteResponse.Should().NotContainEquivalentOf(response.Id);
+    }
+
+    [Fact]
     public async Task VaultServer_ReadEntityByName_ReturnsEntity()
     {
         const string entityName = "testEntityName";

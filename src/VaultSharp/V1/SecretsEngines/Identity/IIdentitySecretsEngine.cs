@@ -79,4 +79,14 @@ public interface IIdentitySecretsEngine
 
     Task<Secret<ReadEntityAliasByIdResponse>> ReadEntityAliasById(string id, string mountPoint = null,
         string wrapTimeToLive = null);
+
+    Task<Secret<CreateAliasResponse>> UpdateEntityAliasById(string id, CreateAliasCommand alias,
+        string mountPoint = null,
+        string wrapTimeToLive = null);
+
+    Task DeleteEntityAliasById(string id,
+        string mountPoint = null);
+
+    Task<Secret<ListInfo>> ListEntityAliasesById(string mountPoint = null,
+        string wrapTimeToLive = null);
 }

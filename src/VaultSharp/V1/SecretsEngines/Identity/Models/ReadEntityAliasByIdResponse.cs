@@ -37,11 +37,7 @@ public class ReadEntityAliasByIdResponse
     [JsonProperty("name")] public string Name { get; set; }
     [JsonProperty("namespace_id")] public string NamespaceId { get; set; }
 
-    /// <summary>
-    ///     Whether the entity is disabled. Disabled entities' associated tokens cannot be used, but are not revoked.
-    /// </summary>
-    [JsonProperty("local")]
-    public bool Local { get; set; }
+    [JsonProperty("local")] public bool Local { get; set; }
 
     [JsonProperty("merged_from_canonical_ids")]
     public string MergedFromCanonicalIds { get; set; }

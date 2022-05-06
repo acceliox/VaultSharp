@@ -73,7 +73,7 @@ public interface IIdentitySecretsEngine
     Task<Secret<ListInfo>> ListEntitiesByName(string mountPoint = null,
         string wrapTimeToLive = null);
 
-    Task<Secret<CreateAliasResponse>> CreateAlias(CreateAliasCommand alias,
+    Task<Secret<CreateAliasResponse>> CreateEntityAlias(CreateAliasCommand alias,
         string mountPoint = null,
         string wrapTimeToLive = null);
 
@@ -88,5 +88,51 @@ public interface IIdentitySecretsEngine
         string mountPoint = null);
 
     Task<Secret<ListInfo>> ListEntityAliasesById(string mountPoint = null,
+        string wrapTimeToLive = null);
+
+    Task<Secret<CreateGroupResponse>> CreateGroup(CreateGroupCommand group,
+        string mountPoint = null,
+        string wrapTimeToLive = null);
+
+    Task UpdateGroupById(string id, CreateGroupCommand group,
+        string mountPoint = null);
+
+    // doesnt seem to work properly in changing group name -> use byId
+    //Task UpdateGroupByName(string name, CreateGroupCommand group,
+    //    string mountPoint = null);
+
+    Task DeleteGroupById(string id,
+        string mountPoint = null);
+
+    Task DeleteGroupByName(string name,
+        string mountPoint = null);
+
+    Task<Secret<ReadGroupResponse>> ReadGroupById(string id, string mountPoint = null,
+        string wrapTimeToLive = null);
+
+    Task<Secret<ReadGroupResponse>> ReadGroupByName(string name, string mountPoint = null,
+        string wrapTimeToLive = null);
+
+    Task<Secret<ListInfo>> ListGroupsById(string mountPoint = null,
+        string wrapTimeToLive = null);
+
+    Task<Secret<ListInfo>> ListGroupsByName(string mountPoint = null,
+        string wrapTimeToLive = null);
+
+    Task<Secret<CreateAliasResponse>> CreateGroupAlias(CreateGroupAliasCommand alias,
+        string mountPoint = null,
+        string wrapTimeToLive = null);
+
+    Task<Secret<ReadGroupAliasByIdResponse>> ReadGroupAliasById(string id, string mountPoint = null,
+        string wrapTimeToLive = null);
+
+    Task<Secret<CreateAliasResponse>> UpdateGroupAliasById(string id, CreateGroupAliasCommand alias,
+        string mountPoint = null,
+        string wrapTimeToLive = null);
+
+    Task DeleteGroupAliasById(string id,
+        string mountPoint = null);
+
+    Task<Secret<ListInfo>> ListGroupAliasesById(string mountPoint = null,
         string wrapTimeToLive = null);
 }

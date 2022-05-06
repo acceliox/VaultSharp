@@ -1,11 +1,6 @@
 ﻿using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace VaultSharp.V1.SecretsEngines.Identity.Models;
-
-/// <summary>
-///     Represents an Entity
-/// </summary>
 public class CreateAliasCommand
 {
     /// <summary>

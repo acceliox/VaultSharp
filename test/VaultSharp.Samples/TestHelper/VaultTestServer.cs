@@ -5,7 +5,7 @@ using DotNet.Testcontainers.Containers.Builders;
 using DotNet.Testcontainers.Containers.Modules;
 using DotNet.Testcontainers.Containers.WaitStrategies;
 
-namespace VaultSharp.Samples;
+namespace VaultSharp.Samples.TestHelper;
 
 public static class VaultTestServer
 {

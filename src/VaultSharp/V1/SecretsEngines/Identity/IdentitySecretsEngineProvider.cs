@@ -97,7 +97,7 @@ internal class IdentitySecretsEngineProvider : IIdentitySecretsEngine
             .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
     }
 
-    public async Task<Secret<CreateAliasResponse>> CreateAlias(
+    public async Task<Secret<CreateAliasResponse>> CreateEntityAlias(
         CreateAliasCommand alias,
         string mountPoint = null,
         string wrapTimeToLive = null)
@@ -111,6 +111,24 @@ internal class IdentitySecretsEngineProvider : IIdentitySecretsEngine
         return await _polymath
             .MakeVaultApiRequest<Secret<CreateAliasResponse>>(
                 mountPoint ?? _polymath.VaultClientSettings.SecretsEngineMountPoints.Identity, "/entity-alias",
+                HttpMethod.Post, configWithoutNullProperties, wrapTimeToLive: wrapTimeToLive)
+            .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
+    }
+
+    public async Task<Secret<CreateAliasResponse>> CreateGroupAlias(
+        CreateGroupAliasCommand groupAlias,
+        string mountPoint = null,
+        string wrapTimeToLive = null)
+    {
+        var configWithoutNullProperties = JsonConvert
+            .DeserializeObject(JsonConvert.SerializeObject(
+                groupAlias,
+                new JsonSerializerSettings {NullValueHandling = NullValueHandling.Ignore}
+            ))!;
+
+        return await _polymath
+            .MakeVaultApiRequest<Secret<CreateAliasResponse>>(
+                mountPoint ?? _polymath.VaultClientSettings.SecretsEngineMountPoints.Identity, "/group-alias",
                 HttpMethod.Post, configWithoutNullProperties, wrapTimeToLive: wrapTimeToLive)
             .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
     }
@@ -137,6 +155,16 @@ internal class IdentitySecretsEngineProvider : IIdentitySecretsEngine
             .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
     }
 
+    public async Task<Secret<ReadGroupAliasByIdResponse>> ReadGroupAliasById(string id, string mountPoint = null,
+        string wrapTimeToLive = null)
+    {
+        return await _polymath
+            .MakeVaultApiRequest<Secret<ReadGroupAliasByIdResponse>>(
+                mountPoint ?? _polymath.VaultClientSettings.SecretsEngineMountPoints.Identity,
+                $"/group-alias/id/{id}", HttpMethod.Get, wrapTimeToLive: wrapTimeToLive)
+            .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
+    }
+
     public async Task<Secret<CreateAliasResponse>> UpdateEntityAliasById(
         string id,
         CreateAliasCommand alias,
@@ -156,11 +184,39 @@ internal class IdentitySecretsEngineProvider : IIdentitySecretsEngine
             .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
     }
 
+    public async Task<Secret<CreateAliasResponse>> UpdateGroupAliasById(
+        string id,
+        CreateGroupAliasCommand groupAlias,
+        string mountPoint = null,
+        string wrapTimeToLive = null)
+    {
+        var configWithoutNullProperties = JsonConvert
+            .DeserializeObject(JsonConvert.SerializeObject(
+                groupAlias,
+                new JsonSerializerSettings {NullValueHandling = NullValueHandling.Ignore}
+            ))!;
+
+        return await _polymath
+            .MakeVaultApiRequest<Secret<CreateAliasResponse>>(
+                mountPoint ?? _polymath.VaultClientSettings.SecretsEngineMountPoints.Identity, $"/group-alias/id/{id}",
+                HttpMethod.Post, configWithoutNullProperties, wrapTimeToLive: wrapTimeToLive)
+            .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
+    }
+
     public async Task DeleteEntityAliasById(string id,
         string mountPoint = null)
     {
         await _polymath.MakeVaultApiRequest(
                 mountPoint ?? _polymath.VaultClientSettings.SecretsEngineMountPoints.Identity, $"/entity-alias/id/{id}",
+                HttpMethod.Delete)
+            .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
+    }
+
+    public async Task DeleteGroupAliasById(string id,
+        string mountPoint = null)
+    {
+        await _polymath.MakeVaultApiRequest(
+                mountPoint ?? _polymath.VaultClientSettings.SecretsEngineMountPoints.Identity, $"/group-alias/id/{id}",
                 HttpMethod.Delete)
             .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
     }
@@ -175,5 +231,133 @@ internal class IdentitySecretsEngineProvider : IIdentitySecretsEngine
                        HttpMethod.Get, wrapTimeToLive: wrapTimeToLive)
                    .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext) ??
                new Secret<ListInfo> {Data = new ListInfo {Keys = new List<string>()}};
+    }
+
+    public async Task<Secret<ListInfo>> ListGroupAliasesById(string mountPoint = null,
+        string wrapTimeToLive = null)
+    {
+        return await _polymath
+                   .MakeVaultApiRequest<Secret<ListInfo>>(
+                       mountPoint ?? _polymath.VaultClientSettings.SecretsEngineMountPoints.Identity,
+                       "/group-alias/id" + "?list=true",
+                       HttpMethod.Get, wrapTimeToLive: wrapTimeToLive)
+                   .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext) ??
+               new Secret<ListInfo> {Data = new ListInfo {Keys = new List<string>()}};
+    }
+
+    public async Task<Secret<CreateGroupResponse>> CreateGroup(
+        CreateGroupCommand group,
+        string mountPoint = null,
+        string wrapTimeToLive = null)
+    {
+        var configWithoutNullProperties = JsonConvert
+            .DeserializeObject(JsonConvert.SerializeObject(
+                group,
+                new JsonSerializerSettings {NullValueHandling = NullValueHandling.Ignore}
+            ))!;
+
+        return await _polymath
+            .MakeVaultApiRequest<Secret<CreateGroupResponse>>(
+                mountPoint ?? _polymath.VaultClientSettings.SecretsEngineMountPoints.Identity, "/group",
+                HttpMethod.Post, configWithoutNullProperties, wrapTimeToLive: wrapTimeToLive)
+            .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
+    }
+
+    public async Task DeleteGroupById(string id,
+        string mountPoint = null)
+    {
+        await _polymath.MakeVaultApiRequest(
+                mountPoint ?? _polymath.VaultClientSettings.SecretsEngineMountPoints.Identity, $"/group/id/{id}",
+                HttpMethod.Delete)
+            .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
+    }
+
+    public async Task DeleteGroupByName(string name,
+        string mountPoint = null)
+    {
+        await _polymath.MakeVaultApiRequest(
+                mountPoint ?? _polymath.VaultClientSettings.SecretsEngineMountPoints.Identity, $"/group/name/{name}",
+                HttpMethod.Delete)
+            .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
+    }
+
+    public async Task<Secret<ReadGroupResponse>> ReadGroupById(string id, string mountPoint = null,
+        string wrapTimeToLive = null)
+    {
+        return await _polymath
+            .MakeVaultApiRequest<Secret<ReadGroupResponse>>(
+                mountPoint ?? _polymath.VaultClientSettings.SecretsEngineMountPoints.Identity,
+                $"/group/id/{id}", HttpMethod.Get, wrapTimeToLive: wrapTimeToLive)
+            .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
+    }
+
+    public async Task<Secret<ReadGroupResponse>> ReadGroupByName(string name, string mountPoint = null,
+        string wrapTimeToLive = null)
+    {
+        return await _polymath
+            .MakeVaultApiRequest<Secret<ReadGroupResponse>>(
+                mountPoint ?? _polymath.VaultClientSettings.SecretsEngineMountPoints.Identity,
+                $"/group/name/{name}", HttpMethod.Get, wrapTimeToLive: wrapTimeToLive)
+            .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
+    }
+
+    public async Task UpdateGroupById(
+        string id,
+        CreateGroupCommand group,
+        string mountPoint = null)
+    {
+        var configWithoutNullProperties = JsonConvert
+            .DeserializeObject(JsonConvert.SerializeObject(
+                group,
+                new JsonSerializerSettings {NullValueHandling = NullValueHandling.Ignore}
+            ))!;
+
+        await _polymath
+            .MakeVaultApiRequest(
+                mountPoint ?? _polymath.VaultClientSettings.SecretsEngineMountPoints.Identity, $"/group/id/{id}",
+                HttpMethod.Post, configWithoutNullProperties)
+            .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
+    }
+
+    public async Task<Secret<ListInfo>> ListGroupsById(string mountPoint = null,
+        string wrapTimeToLive = null)
+    {
+        return await _polymath
+                   .MakeVaultApiRequest<Secret<ListInfo>>(
+                       mountPoint ?? _polymath.VaultClientSettings.SecretsEngineMountPoints.Identity,
+                       "/group/id" + "?list=true",
+                       HttpMethod.Get, wrapTimeToLive: wrapTimeToLive)
+                   .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext) ??
+               new Secret<ListInfo> {Data = new ListInfo {Keys = new List<string>()}};
+    }
+
+    public async Task<Secret<ListInfo>> ListGroupsByName(string mountPoint = null,
+        string wrapTimeToLive = null)
+    {
+        return await _polymath
+                   .MakeVaultApiRequest<Secret<ListInfo>>(
+                       mountPoint ?? _polymath.VaultClientSettings.SecretsEngineMountPoints.Identity,
+                       "/group/name" + "?list=true",
+                       HttpMethod.Get, wrapTimeToLive: wrapTimeToLive)
+                   .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext) ??
+               new Secret<ListInfo> {Data = new ListInfo {Keys = new List<string>()}};
+    }
+
+    public async Task UpdateGroupByName(
+        string name,
+        CreateGroupCommand group,
+        string mountPoint = null)
+    {
+        var configWithoutNullProperties = JsonConvert
+            .DeserializeObject(JsonConvert.SerializeObject(
+                group,
+                new JsonSerializerSettings {NullValueHandling = NullValueHandling.Ignore}
+            ))!;
+
+        await _polymath
+            .MakeVaultApiRequest(
+                mountPoint ?? _polymath.VaultClientSettings.SecretsEngineMountPoints.Identity, $"/group/name/{name}",
+                HttpMethod.Post, configWithoutNullProperties)
+            .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
     }
 }

@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using FluentAssertions;
 using VaultSharp.Core;
+using VaultSharp.Samples.TestHelper;
 using VaultSharp.V1.AuthMethods;
 using VaultSharp.V1.AuthMethods.AppRole;
 using VaultSharp.V1.AuthMethods.GitHub;
@@ -15,12 +16,12 @@ using VaultSharp.V1.SecretsEngines;
 using VaultSharp.V1.SystemBackend;
 using Xunit;
 
-namespace VaultSharp.Samples;
+namespace VaultSharp.Samples.Tests;
 
 public class VaultContainerTestsWithCli
 {
     [Fact]
-    public async Task VaultServer_ReadWriteKv2_ReturnsSameInput()
+    public async Task VaultApi_ReadWriteKv2_ReturnsSameInput()
     {
         const string rootTokenId = "testRoot";
         const string containerName = "VaultTestsWithCLI";
@@ -52,7 +53,7 @@ public class VaultContainerTestsWithCli
     }
 
     [Fact]
-    public async Task VaultServer_WriteDtoToKv2_ReturnsSameInput()
+    public async Task VaultApi_WriteDtoToKv2_ReturnsSameInput()
     {
         const string rootTokenId = "testRoot";
         const string containerName = "VaultTestsWithCLI";
@@ -87,7 +88,7 @@ public class VaultContainerTestsWithCli
     }
 
     [Fact]
-    public async Task VaultServer_WriteMultiLevelDtoToKv2_ReturnsSameInput()
+    public async Task VaultApi_WriteMultiLevelDtoToKv2_ReturnsSameInput()
     {
         const string rootTokenId = "testRoot";
         const string containerName = "VaultTestsWithCLI";
@@ -131,7 +132,7 @@ public class VaultContainerTestsWithCli
     }
 
     [Fact]
-    public async Task VaultServer_ReadWriteKv1_ReturnsSameInput()
+    public async Task VaultApi_ReadWriteKv1_ReturnsSameInput()
     {
         const string rootTokenId = "testRoot";
         const string containerName = "VaultTestsWithCLI";
@@ -166,7 +167,7 @@ public class VaultContainerTestsWithCli
 
 
     [Fact]
-    public async Task VaultServer_SetAppRolePermissions_TokenYieldsPolicy()
+    public async Task VaultApi_SetAppRolePermissions_TokenYieldsPolicy()
     {
         const string roleName = "testRole";
         const string appRolePath = "testAppRole";
@@ -226,7 +227,7 @@ public class VaultContainerTestsWithCli
     }
 
     [Fact]
-    public async Task VaultServer_AppRoleAuthWithResponseWrappedToken_TokenIsValid()
+    public async Task VaultApi_AppRoleAuthWithResponseWrappedToken_TokenIsValid()
     {
         const string roleName = "testRole";
         const string appRolePath = "testAppRole";
@@ -327,7 +328,7 @@ public class VaultContainerTestsWithCli
     }
 
     [Fact(Skip = "Manual Token creation process")]
-    public async Task VaultServer_UseUseGitHubAuth_TokenYieldsPolicy()
+    public async Task VaultApi_UseUseGitHubAuth_TokenYieldsPolicy()
     {
         const string githubPath = "testGithub";
         const string teamName = "acceliox-developers";

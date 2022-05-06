@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using VaultSharp.Core;
+using VaultSharp.Samples.TestHelper;
 using VaultSharp.V1.AuthMethods;
 using VaultSharp.V1.AuthMethods.AppRole;
 using VaultSharp.V1.AuthMethods.AppRole.Models;
@@ -17,12 +18,12 @@ using VaultSharp.V1.SecretsEngines.Identity.Models;
 using VaultSharp.V1.SystemBackend;
 using Xunit;
 
-namespace VaultSharp.Samples;
+namespace VaultSharp.Samples.Tests;
 
 public class VaultContainerTestsWithoutCli
 {
     [Fact]
-    public async Task VaultServer_ReadWriteKv2_ReturnsSameInput()
+    public async Task VaultApi_ReadWriteKv2_ReturnsSameInput()
     {
         const string rootTokenId = "testRoot";
         const string containerName = "VaultTestsWithoutCLI";
@@ -54,7 +55,7 @@ public class VaultContainerTestsWithoutCli
     }
 
     [Fact]
-    public async Task VaultServer_WriteDtoToKv2_ReturnsSameInput()
+    public async Task VaultApi_WriteDtoToKv2_ReturnsSameInput()
     {
         const string rootTokenId = "testRoot";
         const string containerName = "VaultTestsWithoutCLI";
@@ -89,7 +90,7 @@ public class VaultContainerTestsWithoutCli
     }
 
     [Fact]
-    public async Task VaultServer_WriteMultiLevelDtoToKv2_ReturnsSameInput()
+    public async Task VaultApi_WriteMultiLevelDtoToKv2_ReturnsSameInput()
     {
         const string rootTokenId = "testRoot";
         const string containerName = "VaultTestsWithoutCLI";
@@ -133,7 +134,7 @@ public class VaultContainerTestsWithoutCli
     }
 
     [Fact]
-    public async Task VaultServer_ReadWriteKv1_ReturnsSameInput()
+    public async Task VaultApi_ReadWriteKv1_ReturnsSameInput()
     {
         const string rootTokenId = "testRoot";
         const string containerName = "VaultTestsWithoutCLI";
@@ -167,7 +168,7 @@ public class VaultContainerTestsWithoutCli
     }
 
     [Fact]
-    public async Task VaultServer_SetAppRolePermissions_TokenYieldsPolicy()
+    public async Task VaultApi_SetAppRolePermissions_TokenYieldsPolicy()
     {
         const string roleName = "testRole";
         const string appRolePath = "testAppRole";
@@ -212,7 +213,7 @@ public class VaultContainerTestsWithoutCli
     }
 
     [Fact]
-    public async Task VaultServer_ReadAllAppRoles_ReturnsAllRoles()
+    public async Task VaultApi_ReadAllAppRoles_ReturnsAllRoles()
     {
         const string roleNameA = "testrolea";
         const string roleNameB = "testroleb";
@@ -248,7 +249,7 @@ public class VaultContainerTestsWithoutCli
     }
 
     [Fact]
-    public async Task VaultServer_CreateCustomRoleId_ReturnsCustomId()
+    public async Task VaultApi_CreateCustomRoleId_ReturnsCustomId()
     {
         const string roleName = "testRole";
         const string appRolePath = "dev__testAppRole";
@@ -277,7 +278,7 @@ public class VaultContainerTestsWithoutCli
 
 
     [Fact]
-    public async Task VaultServer_AppRoleAuthWithResponseWrappedToken_TokenIsValid()
+    public async Task VaultApi_AppRoleAuthWithResponseWrappedToken_TokenIsValid()
     {
         const string roleName = "testRole";
         const string appRolePath = "testAppRole";
@@ -360,13 +361,13 @@ public class VaultContainerTestsWithoutCli
         apiErrors.Should().Contain("wrapping token is not valid or does not exist");
     }
 
-    [Fact(Skip = "Manual Token creation process")]
-    //[Fact]
-    public async Task VaultServer_UseUseGitHubAuth_TokenYieldsPolicy()
+    [Fact(Skip = "Manual Github Token creation process")]
+    public async Task VaultApi_UseUseGitHubAuth_TokenYieldsPolicy()
     {
         const string githubPath = "testGithub";
-        const string teamName = "acceliox-developers";
-        const string userName = "AEAcceliox";
+        const string teamName = "";
+        const string organization = "testOrganization";
+        const string userName = "";
 
         const string testSecretPath = "testSecrets";
         const string policyName = "testpolicy";
@@ -393,9 +394,9 @@ public class VaultContainerTestsWithoutCli
         });
         // CLI Interactions
         await rootClient.V1.Auth.GitHub.WriteGitHubConfig(
-            new GitHubConfig {organization = "acceliox", token_no_default_policy = true}, githubPath);
+            new GitHubConfig {organization = organization, token_no_default_policy = true}, githubPath);
 
-        var readConfig = await rootClient.V1.Auth.GitHub.ReadGitHubConfig("acceliox", githubPath);
+        var readConfig = await rootClient.V1.Auth.GitHub.ReadGitHubConfig(organization, githubPath);
 
         await rootClient.V1.Auth.GitHub.WriteGitHubTeamMap(new GitHubTeamMap {team_name = teamName, value = policyName},
             githubPath);
@@ -405,7 +406,7 @@ public class VaultContainerTestsWithoutCli
             githubPath);
         var readUserMap = await rootClient.V1.Auth.GitHub.ReadGitHubUserMap(userName, githubPath);
 
-        // login with appRole Auth
+        // login with github Auth
         IAuthMethodInfo gitHubAuthMethodInfo = new GitHubAuthMethodInfo(githubPath, tempToken);
         var vaultClientSettings = new VaultClientSettings(
             $"{vaultAdr}:{port}",
@@ -419,7 +420,54 @@ public class VaultContainerTestsWithoutCli
     }
 
     [Fact]
-    public async Task VaultServer_CreateEntityById_ReturnsEntityName()
+    public async Task VaultApi_CreateGithubGroupAlias_ReturnsCanonicalId()
+    {
+        const string githubPath = "testGithub";
+        const string teamName = "test-developers";
+        const string groupName = "developer";
+        const string organization = "testOrganization";
+        const string rootTokenId = "testRoot";
+        const string containerName = "VaultTestsWithoutCLI";
+        const int port = 8220;
+
+        await using var container =
+            VaultTestServer.BuildVaultServerContainer(port, rootTokenId: rootTokenId, containerName: containerName);
+        await container.StartAsync();
+        var rootClient = await CreateVaultRootClient(port);
+        await rootClient.V1.System.MountAuthBackendAsync(new AuthMethod
+        {
+            Path = githubPath, Type = AuthMethodType.GitHub
+        });
+
+        await rootClient.V1.Auth.GitHub.WriteGitHubConfig(
+            new GitHubConfig {organization = organization, token_no_default_policy = true}, githubPath);
+
+        var readConfig = await rootClient.V1.Auth.GitHub.ReadGitHubConfig(organization, githubPath);
+
+        await rootClient.V1.Auth.GitHub.WriteGitHubTeamMap(new GitHubTeamMap {team_name = teamName},
+            githubPath);
+        var readTeamMap = await rootClient.V1.Auth.GitHub.ReadGitHubTeamMap(teamName, githubPath);
+
+        var getAuthBackendResponse = (await rootClient.V1.System.GetAuthBackendsAsync()).Data;
+        getAuthBackendResponse.TryGetValue($"{githubPath}/", out var authMethod);
+        var accessor = authMethod.Accessor;
+        var createGroupResponse =
+            (await rootClient.V1.Secrets.Identity.CreateGroup(new CreateGroupCommand
+            {
+                Name = groupName, Type = "external"
+            })).Data;
+
+        var response =
+            (await rootClient.V1.Secrets.Identity.CreateGroupAlias(new CreateGroupAliasCommand
+            {
+                Name = teamName, CanonicalId = createGroupResponse.Id, MountAccessor = accessor
+            })).Data;
+
+        response.CanonicalId.Should().Match(createGroupResponse.Id);
+    }
+
+    [Fact]
+    public async Task VaultApi_CreateEntityById_ReturnsEntityName()
     {
         const string entityName = "testEntityName";
         const string rootTokenId = "testRoot";
@@ -439,7 +487,24 @@ public class VaultContainerTestsWithoutCli
     }
 
     [Fact]
-    public async Task VaultServer_CreateEntityByName_ReturnsEntityName()
+    public async Task VaultApi_CreateGroup_ReturnsGroupName()
+    {
+        const string groupName = "testGroupName";
+        const string rootTokenId = "testRoot";
+        const string containerName = "VaultTestsWithoutCLI";
+        const int port = 8220;
+        await using var container =
+            VaultTestServer.BuildVaultServerContainer(port, rootTokenId: rootTokenId, containerName: containerName);
+        await container.StartAsync();
+        var rootClient = await CreateVaultRootClient(port);
+        var response =
+            (await rootClient.V1.Secrets.Identity.CreateGroup(new CreateGroupCommand {Name = groupName})).Data;
+
+        response.Name.Should().Match(groupName);
+    }
+
+    [Fact]
+    public async Task VaultApi_CreateEntityByName_ReturnsEntityName()
     {
         const string entityName = "testEntityName";
         const string rootTokenId = "testRoot";
@@ -459,7 +524,7 @@ public class VaultContainerTestsWithoutCli
     }
 
     [Fact]
-    public async Task VaultServer_CreateAlias_ReturnsCanonicalId()
+    public async Task VaultApi_CreateAlias_ReturnsCanonicalId()
     {
         const string roleName = "testrolea";
         const string appRolePath = "dev__testAppRole";
@@ -483,11 +548,11 @@ public class VaultContainerTestsWithoutCli
             new AppRoleRole {role_name = roleName},
             appRolePath);
         await rootClient.V1.Auth.AppRole.WriteCustomAppRoleId(roleName, roleName, appRolePath);
-        var appRoleResponse = (await rootClient.V1.System.GetAuthBackendsAsync()).Data;
-        appRoleResponse.TryGetValue($"{appRolePath}/", out var authMethod);
+        var getAuthBackendResponse = (await rootClient.V1.System.GetAuthBackendsAsync()).Data;
+        getAuthBackendResponse.TryGetValue($"{appRolePath}/", out var authMethod);
         var accessor = authMethod.Accessor;
         var response =
-            (await rootClient.V1.Secrets.Identity.CreateAlias(new CreateAliasCommand
+            (await rootClient.V1.Secrets.Identity.CreateEntityAlias(new CreateAliasCommand
             {
                 Name = roleName, CanonicalId = result.Id, MountAccessor = accessor
             })).Data;
@@ -496,7 +561,7 @@ public class VaultContainerTestsWithoutCli
     }
 
     [Fact]
-    public async Task VaultServer_ReadEntityById_ReturnsEntity()
+    public async Task VaultApi_ReadEntityById_ReturnsEntity()
     {
         const string entityName = "testEntityName";
         const string rootTokenId = "testRoot";
@@ -518,7 +583,7 @@ public class VaultContainerTestsWithoutCli
     }
 
     [Fact]
-    public async Task VaultServer_ReadEntityAliasById_ReturnsAppRoleRole()
+    public async Task VaultApi_ReadEntityAliasById_ReturnsAppRoleRole()
     {
         const string roleName = "testrolea";
         const string appRolePath = "dev__testAppRole";
@@ -546,7 +611,7 @@ public class VaultContainerTestsWithoutCli
         appRoleResponse.TryGetValue($"{appRolePath}/", out var authMethod);
         var accessor = authMethod.Accessor;
         var response =
-            (await rootClient.V1.Secrets.Identity.CreateAlias(new CreateAliasCommand
+            (await rootClient.V1.Secrets.Identity.CreateEntityAlias(new CreateAliasCommand
             {
                 Name = roleName, CanonicalId = result.Id, MountAccessor = accessor
             })).Data;
@@ -557,7 +622,7 @@ public class VaultContainerTestsWithoutCli
     }
 
     [Fact]
-    public async Task VaultServer_UpdateEntityAliasById_ReturnsNewAppRoleRole()
+    public async Task VaultApi_UpdateEntityAliasById_ReturnsNewAppRoleRole()
     {
         const string roleNameA = "testrolea";
         const string roleNameB = "testroleb";
@@ -592,7 +657,7 @@ public class VaultContainerTestsWithoutCli
         appRoleResponse.TryGetValue($"{appRolePath}/", out var authMethod);
         var accessor = authMethod.Accessor;
         var response =
-            (await rootClient.V1.Secrets.Identity.CreateAlias(new CreateAliasCommand
+            (await rootClient.V1.Secrets.Identity.CreateEntityAlias(new CreateAliasCommand
             {
                 Name = roleNameA, CanonicalId = result.Id, MountAccessor = accessor
             })).Data;
@@ -604,13 +669,63 @@ public class VaultContainerTestsWithoutCli
 
         var afterReadResponse = (await rootClient.V1.Secrets.Identity.ReadEntityAliasById(updateResponse.Id)).Data;
 
-
         beforeReadResponse.Name.Should().Match(roleNameA);
         afterReadResponse.Name.Should().Match(roleNameB);
     }
 
     [Fact]
-    public async Task VaultServer_DeleteEntityAliasById_IsNotReturnedInList()
+    public async Task VaultApi_UpdateGroup_ReturnsNewName()
+    {
+        const string groupNameA = "groupNameA";
+        const string groupNameB = "groupNameB";
+        const string groupNameC = "groupNameC";
+        const string groupNameD = "groupNameD";
+        const string rootTokenId = "testRoot";
+        const string containerName = "VaultTestsWithoutCLI";
+        const int port = 8220;
+        await using var container =
+            VaultTestServer.BuildVaultServerContainer(port, rootTokenId: rootTokenId, containerName: containerName);
+        await container.StartAsync();
+        var rootClient = await CreateVaultRootClient(port);
+        var initialResponse =
+            (await rootClient.V1.Secrets.Identity.CreateGroup(new CreateGroupCommand {Name = groupNameA})).Data;
+
+        var initialReadResponse = (await rootClient.V1.Secrets.Identity.ReadGroupById(initialResponse.Id)).Data;
+
+        await rootClient.V1.Secrets.Identity.UpdateGroupById(initialResponse.Id,
+            new CreateGroupCommand {Name = groupNameB});
+
+        var firstReadResponse = (await rootClient.V1.Secrets.Identity.ReadGroupById(initialResponse.Id)).Data;
+
+        await rootClient.V1.Secrets.Identity.UpdateGroupById(initialResponse.Id,
+            new CreateGroupCommand {Name = groupNameC});
+
+        var secondReadResponse = (await rootClient.V1.Secrets.Identity.ReadGroupByName(groupNameC)).Data;
+
+        var createAdditionalGroup =
+            (await rootClient.V1.Secrets.Identity.CreateGroup(new CreateGroupCommand {Name = groupNameD})).Data;
+
+        var listById = (await rootClient.V1.Secrets.Identity.ListGroupsById()).Data.Keys;
+        var listByName = (await rootClient.V1.Secrets.Identity.ListGroupsByName()).Data.Keys;
+
+        await rootClient.V1.Secrets.Identity.DeleteGroupById(initialReadResponse.Id);
+        await rootClient.V1.Secrets.Identity.DeleteGroupByName(groupNameD);
+
+        var listByIdAfterDelete = (await rootClient.V1.Secrets.Identity.ListGroupsById()).Data.Keys;
+        var listByNameAfterDelete = (await rootClient.V1.Secrets.Identity.ListGroupsByName()).Data.Keys;
+
+        initialReadResponse.Name.Should().Match(groupNameA);
+        firstReadResponse.Name.Should().Match(groupNameB);
+        secondReadResponse.Name.Should().Match(groupNameC);
+        secondReadResponse.Name.Should().Match(groupNameC);
+        listById.Should().ContainEquivalentOf(initialReadResponse.Id);
+        listByName.Should().ContainEquivalentOf(groupNameD);
+        listByIdAfterDelete.Should().BeEmpty();
+        listByNameAfterDelete.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task VaultApi_DeleteEntityAliasById_IsNotReturnedInList()
     {
         const string roleNameA = "testrolea";
         const string appRolePath = "dev__testAppRole";
@@ -639,7 +754,7 @@ public class VaultContainerTestsWithoutCli
         appRoleResponse.TryGetValue($"{appRolePath}/", out var authMethod);
         var accessor = authMethod.Accessor;
         var response =
-            (await rootClient.V1.Secrets.Identity.CreateAlias(new CreateAliasCommand
+            (await rootClient.V1.Secrets.Identity.CreateEntityAlias(new CreateAliasCommand
             {
                 Name = roleNameA, CanonicalId = result.Id, MountAccessor = accessor
             })).Data;
@@ -655,7 +770,118 @@ public class VaultContainerTestsWithoutCli
     }
 
     [Fact]
-    public async Task VaultServer_ReadEntityByName_ReturnsEntity()
+    public async Task VaultApi_DeleteGroupAliasById_IsNotReturnedInList()
+    {
+        const string githubPath = "testGithub";
+        const string teamName = "acceliox-developers";
+        const string groupName = "developer";
+        const string rootTokenId = "testRoot";
+        const string containerName = "VaultTestsWithoutCLI";
+        const int port = 8220;
+        await using var container =
+            VaultTestServer.BuildVaultServerContainer(port, rootTokenId: rootTokenId, containerName: containerName);
+        await container.StartAsync();
+        var rootClient = await CreateVaultRootClient(port);
+        await rootClient.V1.System.MountAuthBackendAsync(new AuthMethod
+        {
+            Path = githubPath, Type = AuthMethodType.GitHub
+        });
+
+        await rootClient.V1.Auth.GitHub.WriteGitHubConfig(
+            new GitHubConfig {organization = "acceliox", token_no_default_policy = true}, githubPath);
+
+        var readConfig = await rootClient.V1.Auth.GitHub.ReadGitHubConfig("acceliox", githubPath);
+
+        await rootClient.V1.Auth.GitHub.WriteGitHubTeamMap(new GitHubTeamMap {team_name = teamName},
+            githubPath);
+        var readTeamMap = await rootClient.V1.Auth.GitHub.ReadGitHubTeamMap(teamName, githubPath);
+
+        var getAuthBackendResponse = (await rootClient.V1.System.GetAuthBackendsAsync()).Data;
+        getAuthBackendResponse.TryGetValue($"{githubPath}/", out var authMethod);
+        var accessor = authMethod.Accessor;
+        var createGroupResponse =
+            (await rootClient.V1.Secrets.Identity.CreateGroup(new CreateGroupCommand
+            {
+                Name = groupName, Type = "external"
+            })).Data;
+
+        var response =
+            (await rootClient.V1.Secrets.Identity.CreateGroupAlias(new CreateGroupAliasCommand
+            {
+                Name = teamName, CanonicalId = createGroupResponse.Id, MountAccessor = accessor
+            })).Data;
+
+        var beforeDeleteResponse = (await rootClient.V1.Secrets.Identity.ListGroupAliasesById()).Data.Keys.ToList();
+
+        await rootClient.V1.Secrets.Identity.DeleteGroupAliasById(response.Id);
+
+        var afterDeleteResponse = (await rootClient.V1.Secrets.Identity.ListGroupAliasesById()).Data.Keys;
+
+        beforeDeleteResponse.Should().ContainEquivalentOf(response.Id);
+        afterDeleteResponse.Should().NotContainEquivalentOf(response.Id);
+    }
+
+    [Fact]
+    public async Task VaultApi_UpdateGroupAliasById_ReturnsNewTeam()
+    {
+        const string githubPath = "testGithub";
+        const string teamNameA = "test-developers-teamA";
+        const string teamNameB = "test-developers-teamB";
+        const string organization = "testOrganization";
+        const string groupName = "developer";
+        const string rootTokenId = "testRoot";
+        const string containerName = "VaultTestsWithoutCLI";
+        const int port = 8220;
+        await using var container =
+            VaultTestServer.BuildVaultServerContainer(port, rootTokenId: rootTokenId, containerName: containerName);
+        await container.StartAsync();
+        var rootClient = await CreateVaultRootClient(port);
+        await rootClient.V1.System.MountAuthBackendAsync(new AuthMethod
+        {
+            Path = githubPath, Type = AuthMethodType.GitHub
+        });
+
+        await rootClient.V1.Auth.GitHub.WriteGitHubConfig(
+            new GitHubConfig {organization = organization, token_no_default_policy = true}, githubPath);
+
+        var readConfig = await rootClient.V1.Auth.GitHub.ReadGitHubConfig(organization, githubPath);
+
+        await rootClient.V1.Auth.GitHub.WriteGitHubTeamMap(new GitHubTeamMap {team_name = teamNameA},
+            githubPath);
+        var readTeamMap = await rootClient.V1.Auth.GitHub.ReadGitHubTeamMap(teamNameA, githubPath);
+
+        var getAuthBackendResponse = (await rootClient.V1.System.GetAuthBackendsAsync()).Data;
+        getAuthBackendResponse.TryGetValue($"{githubPath}/", out var authMethod);
+        var accessor = authMethod.Accessor;
+        var createGroupResponse =
+            (await rootClient.V1.Secrets.Identity.CreateGroup(new CreateGroupCommand
+            {
+                Name = groupName, Type = "external"
+            })).Data;
+
+        var response =
+            (await rootClient.V1.Secrets.Identity.CreateGroupAlias(new CreateGroupAliasCommand
+            {
+                Name = teamNameA, CanonicalId = createGroupResponse.Id, MountAccessor = accessor
+            })).Data;
+
+        var beforeDeleteResponse = (await rootClient.V1.Secrets.Identity.ReadGroupAliasById(response.Id)).Data;
+
+        var updateResponse =
+            (await rootClient.V1.Secrets.Identity.UpdateGroupAliasById(response.Id,
+                new CreateGroupAliasCommand
+                {
+                    Name = teamNameB, CanonicalId = createGroupResponse.Id, MountAccessor = accessor
+                })).Data;
+
+        var afterDeleteResponse = (await rootClient.V1.Secrets.Identity.ReadGroupAliasById(response.Id)).Data;
+
+        beforeDeleteResponse.Name.Should().BeEquivalentTo(teamNameA);
+        afterDeleteResponse.Name.Should().BeEquivalentTo(teamNameB);
+    }
+
+    [Fact]
+    public async Task VaultApi_ReadEntityByName_ReturnsEntity()
     {
         const string entityName = "testEntityName";
         const string rootTokenId = "testRoot";
@@ -676,7 +902,7 @@ public class VaultContainerTestsWithoutCli
     }
 
     [Fact]
-    public async Task VaultServer_ListEntitiesByName_ReturnsAllEntities()
+    public async Task VaultApi_ListEntitiesByName_ReturnsAllEntities()
     {
         const string entityNameA = "testEntityNameA";
         const string entityNameB = "testEntityNameB";

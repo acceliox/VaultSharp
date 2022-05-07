@@ -7,9 +7,9 @@ namespace VaultSharp.V1.SecretsEngines.Identity.Models;
 /// </summary>
 public class CreateOrUpdateEntityResponse
 {
-    [JsonProperty("id")] public string Id { get; set; }
+    [JsonProperty("id")] public string? Id { get; set; }
 
-    [JsonProperty("aliases")] public string Aliases { get; set; }
+    [JsonProperty("aliases")] public string? Aliases { get; set; }
 
-    [JsonProperty("name")] public string Name { get; set; }
+    [JsonProperty("name")] public string? Name { get; set; }
 }

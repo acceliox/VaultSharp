@@ -624,8 +624,8 @@ public class VaultContainerTestsWithoutCli
     [Fact]
     public async Task VaultApi_UpdateEntityAliasById_ReturnsNewAppRoleRole()
     {
-        const string roleNameA = "testrolea";
-        const string roleNameB = "testroleb";
+        const string roleNameA = "dev__testrolea";
+        const string roleNameB = "dev__testroleb";
         const string appRolePath = "dev__testAppRole";
         const string entityName = "testEntityName";
         const string rootTokenId = "testRoot";
@@ -668,6 +668,8 @@ public class VaultContainerTestsWithoutCli
             new CreateAliasCommand {Name = roleNameB, CanonicalId = result.Id, MountAccessor = accessor})).Data;
 
         var afterReadResponse = (await rootClient.V1.Secrets.Identity.ReadEntityAliasById(updateResponse.Id)).Data;
+
+        var readEntityResponse = (await rootClient.V1.Secrets.Identity.ReadEntityById(result.Id)).Data;
 
         beforeReadResponse.Name.Should().Match(roleNameA);
         afterReadResponse.Name.Should().Match(roleNameB);
@@ -874,10 +876,10 @@ public class VaultContainerTestsWithoutCli
                     Name = teamNameB, CanonicalId = createGroupResponse.Id, MountAccessor = accessor
                 })).Data;
 
-        var afterDeleteResponse = (await rootClient.V1.Secrets.Identity.ReadGroupAliasById(response.Id)).Data;
-
+        var afterUpdateResponse = (await rootClient.V1.Secrets.Identity.ReadGroupAliasById(response.Id)).Data;
+        var readGroupResponse = (await rootClient.V1.Secrets.Identity.ReadGroupByName(groupName)).Data;
         beforeDeleteResponse.Name.Should().BeEquivalentTo(teamNameA);
-        afterDeleteResponse.Name.Should().BeEquivalentTo(teamNameB);
+        afterUpdateResponse.Name.Should().BeEquivalentTo(teamNameB);
     }
 
     [Fact]

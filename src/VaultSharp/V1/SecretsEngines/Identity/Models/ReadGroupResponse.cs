@@ -50,5 +50,5 @@ public class ReadGroupResponse
 
     [JsonProperty("last_update_time")] public string LastUpdateTime { get; set; }
 
-    [JsonProperty("aliases")] public List<string> Aliases { get; set; }
+    [JsonProperty("alias")] public ReadGroupAliasByIdResponse Alias { get; set; }
 }

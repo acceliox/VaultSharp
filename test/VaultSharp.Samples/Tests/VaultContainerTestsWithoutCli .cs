@@ -13,6 +13,7 @@ using VaultSharp.V1.AuthMethods.AppRole.Models;
 using VaultSharp.V1.AuthMethods.GitHub;
 using VaultSharp.V1.AuthMethods.GitHub.Models;
 using VaultSharp.V1.AuthMethods.Token;
+using VaultSharp.V1.AuthMethods.UserPass.Models;
 using VaultSharp.V1.SecretsEngines;
 using VaultSharp.V1.SecretsEngines.Identity.Models;
 using VaultSharp.V1.SystemBackend;
@@ -521,6 +522,129 @@ public class VaultContainerTestsWithoutCli
             })).Data;
 
         response.Name.Should().Match(entityName);
+    }
+
+    [Fact]
+    public async Task VaultApi_CreateUserPassUser_ReturnsEntityName()
+    {
+        const string userName = "testUserA";
+        const string testPassword = "testUserA";
+        const string rootTokenId = "testRoot";
+        const string containerName = "VaultTestsWithoutCLI";
+        const string userPassPath = "userPassTestPath";
+        const string TokenMaxTtl = "3000";
+        const string TokenTtl = "123";
+        const int port = 8220;
+        await using var container =
+            VaultTestServer.BuildVaultServerContainer(port, rootTokenId: rootTokenId, containerName: containerName);
+        await container.StartAsync();
+        var rootClient = await CreateVaultRootClient(port);
+        await rootClient.V1.System.MountAuthBackendAsync(new AuthMethod
+        {
+            Path = userPassPath, Type = AuthMethodType.UserPass
+        });
+
+        await rootClient.V1.Auth.UserPass.CreateOrUpdateUser(
+            new UserPassUser
+            {
+                Username = userName, Password = testPassword, TokenMaxTtl = TokenMaxTtl, TokenTtl = TokenTtl
+            }, userPassPath);
+
+        var readUserResponse = (await rootClient.V1.Auth.UserPass.ReadUser(userName, userPassPath)).Data;
+
+        readUserResponse.TokenMaxTtl.Should().Match(TokenMaxTtl);
+        readUserResponse.TokenTtl.Should().Match(TokenTtl);
+    }
+
+    [Fact]
+    public async Task VaultApi_ListUser_ReturnsUsers()
+    {
+        const string userNameA = "testUserA";
+        const string userNameB = "testUserB";
+
+        const string testPasswordA = "testUserA";
+        const string testPasswordB = "testUserB";
+
+        const string rootTokenId = "testRoot";
+        const string containerName = "VaultTestsWithoutCLI";
+        const string userPassPath = "userPassTestPath";
+        const string TokenMaxTtl = "3000";
+        const string TokenTtl = "123";
+        const int port = 8220;
+        await using var container =
+            VaultTestServer.BuildVaultServerContainer(port, rootTokenId: rootTokenId, containerName: containerName);
+        await container.StartAsync();
+        var rootClient = await CreateVaultRootClient(port);
+        await rootClient.V1.System.MountAuthBackendAsync(new AuthMethod
+        {
+            Path = userPassPath, Type = AuthMethodType.UserPass
+        });
+
+        await rootClient.V1.Auth.UserPass.CreateOrUpdateUser(
+            new UserPassUser
+            {
+                Username = userNameA, Password = testPasswordA, TokenMaxTtl = TokenMaxTtl, TokenTtl = TokenTtl
+            }, userPassPath);
+
+        await rootClient.V1.Auth.UserPass.CreateOrUpdateUser(
+            new UserPassUser
+            {
+                Username = userNameB, Password = testPasswordB, TokenMaxTtl = TokenMaxTtl, TokenTtl = TokenTtl
+            }, userPassPath);
+
+
+        var readUserResponse = (await rootClient.V1.Auth.UserPass.ListUsers(userPassPath)).Data.Keys.ToList();
+
+        readUserResponse.Should().ContainEquivalentOf(userNameA.ToLower());
+        readUserResponse.Should().ContainEquivalentOf(userNameB.ToLower());
+    }
+
+    [Fact]
+    public async Task VaultApi_UpdateAndDeleteUser_ReturnsEmtpyList()
+    {
+        const string userNameA = "testUserA";
+        const string testPolicy = "testPolicy";
+
+        const string testPasswordA = "testpasswordxy";
+        const string testPasswordB = "testpasswordxyz3";
+
+        const string rootTokenId = "testRoot";
+        const string containerName = "VaultTestsWithoutCLI";
+        const string userPassPath = "userPassTestPath";
+        const string TokenMaxTtl = "3000";
+        const string TokenTtl = "123";
+        const int port = 8220;
+        await using var container =
+            VaultTestServer.BuildVaultServerContainer(port, rootTokenId: rootTokenId, containerName: containerName);
+        await container.StartAsync();
+        var rootClient = await CreateVaultRootClient(port);
+        await rootClient.V1.System.MountAuthBackendAsync(new AuthMethod
+        {
+            Path = userPassPath, Type = AuthMethodType.UserPass
+        });
+
+        await rootClient.V1.Auth.UserPass.CreateOrUpdateUser(
+            new UserPassUser
+            {
+                Username = userNameA, Password = testPasswordA, TokenMaxTtl = TokenMaxTtl, TokenTtl = TokenTtl
+            }, userPassPath);
+
+        await rootClient.V1.Auth.UserPass.UpdatePasswordOnUser(userNameA, testPasswordB, userPassPath);
+
+        await rootClient.V1.Auth.UserPass.UpdatePoliciesOnUser(userNameA, new List<string> {testPolicy},
+            userPassPath);
+
+        var listUserBeforeResponse = (await rootClient.V1.Auth.UserPass.ListUsers(userPassPath)).Data.Keys.ToList();
+
+        var readUserResponse = (await rootClient.V1.Auth.UserPass.ReadUser(userNameA, userPassPath)).Data;
+
+        await rootClient.V1.Auth.UserPass.DeleteUser(userNameA, userPassPath);
+
+        var listUserAfterResponse = (await rootClient.V1.Auth.UserPass.ListUsers(userPassPath)).Data.Keys.ToList();
+
+        listUserBeforeResponse.Should().ContainEquivalentOf(userNameA.ToLower());
+        readUserResponse.TokenPolicies.Should().ContainEquivalentOf(testPolicy.ToLower());
+        listUserAfterResponse.Should().BeEmpty();
     }
 
     [Fact]

@@ -31,6 +31,7 @@ internal class AuthMethodProvider : IAuthMethod
         LDAP = new LDAPAuthMethodProvider(_polymath);
         Token = new TokenAuthMethodProvider(_polymath);
         UserPass = new UserPassAuthMethodProvider(_polymath);
+        Kubernetes = new KubernetesAuthMethodProvider(_polymath);
     }
 
     public IAliCloudAuthMethod AliCloud => throw new NotImplementedException();
@@ -47,7 +48,7 @@ internal class AuthMethodProvider : IAuthMethod
 
     public IGitHubAuthMethod GoogleCloud => throw new NotImplementedException();
 
-    public IKubernetesAuthMethod Kubernetes => throw new NotImplementedException();
+    public IKubernetesAuthMethod Kubernetes { get; }
 
     public ILDAPAuthMethod LDAP { get; }
 

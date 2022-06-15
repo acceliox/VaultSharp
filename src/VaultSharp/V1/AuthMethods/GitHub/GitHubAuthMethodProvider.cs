@@ -49,11 +49,6 @@ internal class GitHubAuthMethodProvider : IGitHubAuthMethod
 
     public async Task WriteGitHubTeamMap(GitHubTeamMap teamMap, string mountPoint = "github")
     {
-        //var configWithoutNullProperties = JsonConvert
-        //    .DeserializeObject(JsonConvert.SerializeObject(
-        //        userMap,
-        //        new JsonSerializerSettings {NullValueHandling = NullValueHandling.Ignore}
-        //    ))!;
         await _polymath
             .MakeVaultApiRequest($"v1/auth/{mountPoint}/map/teams/{teamMap.team_name}", HttpMethod.Post,
                 new {teamMap.value})

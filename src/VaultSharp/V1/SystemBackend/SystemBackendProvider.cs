@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -639,6 +641,20 @@ namespace VaultSharp.V1.SystemBackend
         public Task<string> HashWithAuditBackendAsync(string mountPoint, string inputToHash)
         {
             throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// This endpoint returns a snapshot of the current state of the raft cluster.
+        /// The snapshot is returned as binary data and should be redirected to a file.
+        /// Unavailable if Raft is used exclusively for ha_storage.
+        /// </summary>
+        /// <see cref="https://www.vaultproject.io/api-docs/system/storage/raft"/>
+        /// <returns>Content type: application/gzip</returns>
+        public async Task<byte[]> GetSnapshot()
+        {
+            var response = await _polymath.MakeVaultApiRequest<string>("v1/sys/storage/raft/snapshot", HttpMethod.Get, null, true)
+                .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
+            return Encoding.UTF8.GetBytes(response); // Check encoding of web response
         }
     }
 }

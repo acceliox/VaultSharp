@@ -1057,10 +1057,10 @@ public class VaultContainerTestsWithoutCli
         readResponse.Should().ContainMatch(entityNameB);
     }
 
-    [Fact]
+    //[Fact]
     public async Task VaultApi_GetSnapshot_ReturnsBinarySnapshot()
     {
-        // Todo: Configure vault with raft storage
+        // Todo: Configure vault test container with raft storage
 
         const string rootTokenId = "testRoot";
         const string containerName = "VaultTestsWithoutCLI";

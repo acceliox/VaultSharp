@@ -6,7 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Docker.DotNet;
 using Docker.DotNet.Models;
-using DotNet.Testcontainers.Containers.Modules;
+using DotNet.Testcontainers.Containers;
 
 namespace VaultSharp.Samples.TestHelper;
 

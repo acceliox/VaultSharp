@@ -1,9 +1,8 @@
 ﻿// Licensed to acceliox GmbH under one or more agreements.
 // See the LICENSE file in the project root for more information.Copyright (c) acceliox GmbH. All rights reserved.
 
-using DotNet.Testcontainers.Containers.Builders;
-using DotNet.Testcontainers.Containers.Modules;
-using DotNet.Testcontainers.Containers.WaitStrategies;
+using DotNet.Testcontainers.Builders;
+using DotNet.Testcontainers.Containers;
 
 namespace VaultSharp.Samples.TestHelper;
 

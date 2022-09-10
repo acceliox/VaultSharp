@@ -1,6 +1,7 @@
 ﻿// Licensed to acceliox GmbH under one or more agreements.
 // See the LICENSE file in the project root for more information.Copyright (c) acceliox GmbH. All rights reserved.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -1056,6 +1057,58 @@ public class VaultContainerTestsWithoutCli
         readResponse.Should().ContainMatch(entityNameB);
     }
 
+    [Fact]
+    public async Task VaultApi_GetSnapshot_ReturnsBinarySnapshot()
+    {
+        // Todo: Configure vault with raft storage
+
+        const string rootTokenId = "testRoot";
+        const string containerName = "VaultTestsWithoutCLI";
+        const int port = 8220;
+        await using var container =
+            VaultTestServer.BuildVaultServerContainer(port, rootTokenId: rootTokenId, containerName: containerName);
+        await container.StartAsync();
+        var rootClient = await CreateVaultRootClient(port);
+
+        byte[] response = null;
+        try
+        {
+            response = await rootClient.V1.System.GetSnapshot();
+        }
+        catch (Exception e) {
+            Console.WriteLine(e);
+            // {"{\"errors\":[\"1 error occurred:\\n\\t* unsupported path\\n\\n\"]}\n"}
+            // https://discuss.hashicorp.com/t/api-error-unsupported-path-during-backup-of-vault/36066/2
+            // https://learn.hashicorp.com/collections/vault/raft
+            // https://learn.hashicorp.com/tutorials/vault/raft-deployment-guide?in=vault/raft
+        }
+        response.Should().NotBeEmpty();
+    }
+
+    //[Fact]
+    // Integration test
+    public async Task VaultApi_GetSnapshotFromRealVaultInstance_ReturnsBinarySnapshot()
+    {
+        
+        const string rootTokenId = "hvs.xxxxxxxxxxx";
+        const string vaultUrl = "https://vault-dev.acceliox.io";
+        const int port = 443;
+
+        IAuthMethodInfo authMethod = new TokenAuthMethodInfo(rootTokenId);
+        var vaultClientSettings = new VaultClientSettings($"{vaultUrl}:{port}", authMethod);
+        var rootClient = new VaultClient(vaultClientSettings);
+
+        byte[] response = null;
+        try
+        {
+            response = await rootClient.V1.System.GetSnapshot();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+        response.Should().NotBeEmpty();
+    }
 
     private static async Task<IVaultClient> CreateVaultRootClient(int port = 8200, string rootTokenId = "testRoot")
     {

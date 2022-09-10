@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -902,5 +903,14 @@ namespace VaultSharp.V1.SystemBackend
         /// </param>
         /// <returns>The unwrapped original data.</returns>
         Task<Secret<TData>> UnwrapWrappedResponseDataAsync<TData>(string tokenId);
+
+        /// <summary>
+        /// This endpoint returns a snapshot of the current state of the raft cluster.
+        /// The snapshot is returned as binary data and should be redirected to a file.
+        /// Unavailable if Raft is used exclusively for ha_storage.
+        /// </summary>
+        /// <see cref="https://www.vaultproject.io/api-docs/system/storage/raft"/>
+        /// <returns>Content type: application/gzip</returns>
+        Task<byte[]> GetSnapshot();
     }
 }

@@ -1102,6 +1102,7 @@ public class VaultContainerTestsWithoutCli
         try
         {
             response = await rootClient.V1.System.GetSnapshot();
+            System.IO.File.WriteAllBytes(@"D:/temp/vault-backup-test.gz", response);
         }
         catch (Exception e)
         {

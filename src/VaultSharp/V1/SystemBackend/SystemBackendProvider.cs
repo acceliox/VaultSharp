@@ -652,9 +652,9 @@ namespace VaultSharp.V1.SystemBackend
         /// <returns>Content type: application/gzip</returns>
         public async Task<byte[]> GetSnapshot()
         {
-            var response = await _polymath.MakeVaultApiRequest<string>("v1/sys/storage/raft/snapshot", HttpMethod.Get, null, true)
+            var response = await _polymath.MakeVaultApiRequest<byte[]>("v1/sys/storage/raft/snapshot", HttpMethod.Get, null, true, null, null, false, true)
                 .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
-            return Encoding.UTF8.GetBytes(response); // Check encoding of web response
+            return response;
         }
     }
 }

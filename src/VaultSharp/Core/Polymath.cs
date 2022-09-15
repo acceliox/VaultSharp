@@ -151,7 +151,7 @@ internal class Polymath
 
     public async Task<TResponse> MakeVaultApiRequest<TResponse>(string resourcePath, HttpMethod httpMethod,
         object requestData = null, bool rawResponse = false, Action<HttpResponseMessage> postResponseAction = null,
-        string wrapTimeToLive = null, bool unauthenticated = false) where TResponse : class
+        string wrapTimeToLive = null, bool unauthenticated = false, bool readContentBinary = false) where TResponse : class
     {
         var headers = new Dictionary<string, string>();
 
@@ -172,7 +172,7 @@ internal class Polymath
             headers.Add(NamespaceHeaderKey, VaultClientSettings.Namespace);
 
         return await MakeRequestAsync<TResponse>(resourcePath, httpMethod, requestData, headers, rawResponse,
-            postResponseAction).ConfigureAwait(VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
+            postResponseAction, readContentBinary).ConfigureAwait(VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
     }
 
     public Secret<T2> GetMappedSecret<T1, T2>(Secret<T1> sourceSecret, T2 destinationData)
@@ -193,7 +193,7 @@ internal class Polymath
     /// //////
     protected async Task<TResponse> MakeRequestAsync<TResponse>(string resourcePath, HttpMethod httpMethod,
         object requestData = null, IDictionary<string, string> headers = null, bool rawResponse = false,
-        Action<HttpResponseMessage> postResponseAction = null) where TResponse : class
+        Action<HttpResponseMessage> postResponseAction = null, bool readContentBinary = false) where TResponse : class
     {
         try
         {
@@ -257,6 +257,11 @@ internal class Polymath
 
             VaultClientSettings.AfterApiResponseAction?.Invoke(httpResponseMessage);
 
+            if (readContentBinary) {
+                var responseBinary = await httpResponseMessage.Content.ReadAsByteArrayAsync()
+                            .ConfigureAwait(VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
+                return responseBinary as TResponse;
+            }
             var responseText =
                 await
                     httpResponseMessage.Content.ReadAsStringAsync()

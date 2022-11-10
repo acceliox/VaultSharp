@@ -47,4 +47,11 @@ public interface IAppRoleAuthMethod
 
     Task<Secret<WrapInfo>> CreateResponseWrappedSecretId(string wrapTimeToLive, string roleName,
         string mountPoint = "approle");
+
+    /// <summary>
+    ///     Deletes the previously registered role.
+    /// </summary>
+    /// <param name="roleName">Name of the AppRole Role</param>
+    /// <param name="mountPoint">Mount point of the AppRole Auth method</param>
+    Task DeleteAppRoleRole(string roleName, string mountPoint = AuthMethodDefaultPaths.AppRole);
 }

@@ -88,4 +88,10 @@ internal class AppRoleAuthMethodProvider : IAppRoleAuthMethod
                 HttpMethod.Post, wrapTimeToLive: wrapTimeToLive)
             .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
     }
+
+    public async Task DeleteAppRoleRole(string roleName, string mountPoint = AuthMethodDefaultPaths.AppRole)
+    {
+        await _polymath.MakeVaultApiRequest($"v1/auth/{mountPoint}/role/{roleName}", HttpMethod.Delete)
+            .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
+    }
 }

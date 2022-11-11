@@ -208,7 +208,7 @@ internal class IdentitySecretsEngineProvider : IIdentitySecretsEngine
     {
         await _polymath.MakeVaultApiRequest(
                 mountPoint ?? _polymath.VaultClientSettings.SecretsEngineMountPoints.Identity,
-                $"/identity/entity/id/{id}",
+                $"/entity/id/{id}",
                 HttpMethod.Delete)
             .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
     }

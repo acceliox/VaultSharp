@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>net6.0</TargetFrameworks>
     <Title>VaultSharp</Title>
-    <Version>2.0.1.8</Version>
+    <Version>2.0.1.9</Version>
     <Authors>Raja Nadar</Authors>
     <LangVersion>10.0</LangVersion>
     <Nullable>enable</Nullable>
@@ -12,8 +12,8 @@
     <PackageTags>c# vault hashicorp .net netcore netstandard api secret consul kv ldap aws ec2 iam userpass</PackageTags>
     <Description>The most comprehensive .NET Library for HashiCorp's Vault which is a modern secret management system.</Description>
     <RepositoryType>Github</RepositoryType>
-    <AssemblyVersion>2.0.1.8</AssemblyVersion>
-    <FileVersion>2.0.1.8</FileVersion>
+    <AssemblyVersion>2.0.1.9</AssemblyVersion>
+    <FileVersion>2.0.1.9</FileVersion>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageIcon>icon.png</PackageIcon>
     

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -708,6 +709,33 @@ public class VaultContainerTestsWithoutCli
     }
 
     [Fact]
+    public async Task VaultApi_DeleteEntityById_ReturnsEmpty()
+    {
+        const string entityName = "testEntityName";
+        const string rootTokenId = "testRoot";
+        const string containerName = "VaultTestsWithoutCLI";
+        const int port = 8220;
+        await using var container =
+            VaultTestServer.BuildVaultServerContainer(port, rootTokenId: rootTokenId, containerName: containerName);
+        await container.StartAsync();
+        var rootClient = await CreateVaultRootClient(port);
+        var response =
+            (await rootClient.V1.Secrets.Identity.CreateOrUpdateEntityByName(new CreateOrUpdateEntityByNameCommand
+            {
+                Name = entityName, Disabled = false
+            })).Data;
+
+        var entityListBefore = await rootClient.V1.Secrets.Identity.ListEntitiesByName();
+
+        await rootClient.V1.Secrets.Identity.DeleteEntityById(response.Id);
+
+        var entityListAfter = await rootClient.V1.Secrets.Identity.ListEntitiesByName();
+
+        entityListBefore?.Data?.Keys.Should().HaveCount(1);
+        entityListAfter?.Data?.Keys.Should().BeNullOrEmpty();
+    }
+
+    [Fact]
     public async Task VaultApi_ReadEntityAliasById_ReturnsAppRoleRole()
     {
         const string roleName = "testrolea";
@@ -843,7 +871,6 @@ public class VaultContainerTestsWithoutCli
 
         initialReadResponse.Name.Should().Match(groupNameA);
         firstReadResponse.Name.Should().Match(groupNameB);
-        secondReadResponse.Name.Should().Match(groupNameC);
         secondReadResponse.Name.Should().Match(groupNameC);
         listById.Should().ContainEquivalentOf(initialReadResponse.Id);
         listByName.Should().ContainEquivalentOf(groupNameD);
@@ -1075,13 +1102,15 @@ public class VaultContainerTestsWithoutCli
         {
             response = await rootClient.V1.System.GetSnapshot();
         }
-        catch (Exception e) {
+        catch (Exception e)
+        {
             Console.WriteLine(e);
             // {"{\"errors\":[\"1 error occurred:\\n\\t* unsupported path\\n\\n\"]}\n"}
             // https://discuss.hashicorp.com/t/api-error-unsupported-path-during-backup-of-vault/36066/2
             // https://learn.hashicorp.com/collections/vault/raft
             // https://learn.hashicorp.com/tutorials/vault/raft-deployment-guide?in=vault/raft
         }
+
         response.Should().NotBeEmpty();
     }
 
@@ -1089,7 +1118,6 @@ public class VaultContainerTestsWithoutCli
     // Integration test
     public async Task VaultApi_GetSnapshotFromRealVaultInstance_ReturnsBinarySnapshot()
     {
-        
         const string rootTokenId = "hvs.xxxxxxxxxxx";
         const string vaultUrl = "https://vault-dev.acceliox.io";
         const int port = 443;
@@ -1102,12 +1130,13 @@ public class VaultContainerTestsWithoutCli
         try
         {
             response = await rootClient.V1.System.GetSnapshot();
-            System.IO.File.WriteAllBytes(@"D:/temp/vault-backup-test.gz", response);
+            File.WriteAllBytes(@"D:/temp/vault-backup-test.gz", response);
         }
         catch (Exception e)
         {
             Console.WriteLine(e);
         }
+
         response.Should().NotBeEmpty();
     }
 

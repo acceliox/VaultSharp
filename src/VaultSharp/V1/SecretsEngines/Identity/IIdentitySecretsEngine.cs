@@ -84,6 +84,9 @@ public interface IIdentitySecretsEngine
         string mountPoint = null,
         string wrapTimeToLive = null);
 
+    Task DeleteEntityById(string id,
+        string mountPoint = null);
+
     Task DeleteEntityAliasById(string id,
         string mountPoint = null);
 

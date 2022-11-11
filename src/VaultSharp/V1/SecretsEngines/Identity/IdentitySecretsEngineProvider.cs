@@ -203,6 +203,16 @@ internal class IdentitySecretsEngineProvider : IIdentitySecretsEngine
             .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
     }
 
+    public async Task DeleteEntityById(string id,
+        string mountPoint = null)
+    {
+        await _polymath.MakeVaultApiRequest(
+                mountPoint ?? _polymath.VaultClientSettings.SecretsEngineMountPoints.Identity,
+                $"/identity/entity/id/{id}",
+                HttpMethod.Delete)
+            .ConfigureAwait(_polymath.VaultClientSettings.ContinueAsyncTasksOnCapturedContext);
+    }
+
     public async Task DeleteEntityAliasById(string id,
         string mountPoint = null)
     {
